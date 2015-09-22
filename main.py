@@ -88,17 +88,19 @@ class TMI:
         regex += r' :(.*)'  # message
         match = re.search(regex, ircMessage)
         if match:
-            color = match.group(1)
-            displayname = match.group(2)
-            emotes = match.group(3)
-            subscribed = bool(int(match.group(4)))
-            turbo = bool(int(match.group(5)))
-            usertype = match.group(6)
-            username = match.group(7)
-            channel = match.group(8)
-            message = match.group(9)
+            result = {
+            'color' : match.group(1),
+            'displayname' : match.group(2),
+            'emotes' : match.group(3),
+            'subscribed' : bool(int(match.group(4))),
+            'turbo' : bool(int(match.group(5))),
+            'usertype' : match.group(6),
+            'username' : match.group(7),
+            'channel' : match.group(8),
+            'message' : match.group(9)
+            }
             for subscriber in self.subscribers:
-                subscriber(color, displayname, emotes, subscribed, turbo, usertype, username, channel, message)
+                subscriber(result)
         if re.search(r':tmi.twitch.tv NOTICE \* :Error logging i.*', ircMessage):
             logger.critical('Error logging in to twitch irc, check oauth and username are set in config.txt!')
             sys.exit()
@@ -156,10 +158,7 @@ class Console:
         self.txt_color_o = [0x0, 0x0, 0x0]
         self.lines = []
 
-    def new_twitchmessage(self, ucolor, displayname, emotes, subscriber,
-                          turbo, usertype, username, channel, message):
-        if self.idle_timer.is_alive():
-            self.idle_timer.cancel()
+    def make_prependstr(self,usertype,subscriber,channel):
         prepends = ''
         if usertype == 'mod':
             prepends = '@' + prepends
@@ -167,36 +166,50 @@ class Console:
             prepends = '^' + usertype + '^_' + prepends
         if subscriber:
             prepends = '$' + prepends
-        prepends = '['+channel[:3]+']' + prepends
-        before_message = '%s%s : ' % (prepends, displayname or username)
-        wrapped = wraptext(before_message + message, self.font, self.size[WIDTH])
+        prepends = '[' + channel[:3] + ']' + prepends
+        return prepends
+
+    def prepare_surfaces(self,prepends,username,usercolor,text):
+        new_lines = []
+        before_message = '%s%s : ' % (prepends, username)
+        wrapped = wraptext(before_message + text, self.font, self.size[WIDTH])
         first_line = wrapped[0]
         prepends_surf = self.font.render(prepends, True, self.txt_color_o)
-        if ucolor:
-            username_surf = self.font.render(displayname or username, True, (int(ucolor[:2], 16),
-                                             int(ucolor[2:4], 16), int(ucolor[4:], 16)))
+        if usercolor:
+            hexcolor = (int(usercolor[:2], 16), int(usercolor[2:4], 16), int(usercolor[4:], 16))
+            username_surf = self.font.render(username, True, hexcolor)
         else:
-            username_surf = self.font.render(displayname or username, True, self.txt_color_o)
+            username_surf = self.font.render(username, True, self.txt_color_o)
         filler_surf = self.font.render(' : ', True, self.txt_color_o)
         message_surf = self.font.render(first_line[len(before_message):], True, self.txt_color_o)
-        self.lines.append([prepends_surf, username_surf, filler_surf, message_surf])
+        new_lines.append([prepends_surf, username_surf, filler_surf, message_surf])
         for wrappedline in wrapped[1:]:
-            self.lines.append(self.font.render(wrappedline, True, self.txt_color_o))
+            new_lines.append(self.font.render(wrappedline, True, self.txt_color_o))
+        return new_lines
 
-        self.prepare_display()
-        self.txt_layer.fill(self.bg_color)
-        lines = self.lines[-(self.max_lines+self.c_scroll):len(self.lines)-self.c_scroll]
+    def blit_lines(self, lines, surface):
         y_pos = self.size[HEIGHT]-(self.font_height*(len(lines)))
         for line in lines:
             if isinstance(line, list):
                 x_pos = 0
                 for part in line:
-                    self.txt_layer.blit(part, (x_pos, y_pos, 0, 0))
+                    surface.blit(part, (x_pos, y_pos, 0, 0))
                     x_pos += part.get_width()
             else:
-                self.txt_layer.blit(line, (0, y_pos, 0, 0))
+                surface.blit(line, (0, y_pos, 0, 0))
             y_pos += self.font_height
 
+    def new_twitchmessage(self, message):
+        if self.idle_timer.is_alive():
+            self.idle_timer.cancel()
+
+        prepends = self.make_prependstr(message['usertype'], message['subscribed'], message['channel'])
+        new_surfaces = self.prepare_surfaces(prepends, message['displayname'] or message['username'], message['color'], message['message'])
+        self.lines.extend(new_surfaces)
+        self.prepare_display()
+        self.txt_layer.fill(self.bg_color)
+        self.lines = self.lines[-(self.max_lines):len(self.lines)]
+        self.blit_lines(self.lines, self.txt_layer)
         self.bg_layer.fill(self.bg_color)
         self.bg_layer.blit(self.txt_layer, (0, 0, 0, 0))
         pygame.draw.rect(self.screen, self.txt_color_i, (self.rect.x - 1, self.rect.y - 1, self.size[WIDTH] + 2,
