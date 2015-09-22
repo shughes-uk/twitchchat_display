@@ -1,17 +1,139 @@
-from string import ascii_letters
+
 import pygame
-import textwrap
+import socket,logging
+import time
+import imp
+import os, sys
+import traceback
+import re
+from threading import Thread, Timer
+from pygame.locals import *
+logger = logging.getLogger("twitch_monitor")
+from itertools import chain
+from yaml import load
+from string import ascii_letters
+
+import signal
+
+def signal_term_handler(signal, frame):
+    print 'got SIGTERM'
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, signal_term_handler)
+
+def remove_nonascii(text):
+    return ''.join(i for i in text if ord(i)<128)
+
+def wraptext(text, font, maxwidth):
+    lines = []
+    while text:
+        width = 0
+        cut_i = len(text)
+        width = font.size(text[:cut_i])[WIDTH]
+        while width > maxwidth:
+            cut_i -= 1
+            width = font.size(text[:cut_i])[WIDTH]
+
+        lines.append(text[:cut_i])
+        text = text[cut_i:]
+    return lines
+
+
+def wrap_multi_line(text, font, maxwidth):
+    """ returns text taking new lines into account.
+    """
+    lines = chain(*(wrapline(line, font, maxwidth) for line in text.splitlines()))
+    return list(lines)
+
+def turn_screen_off():
+    os.system("/opt/vc/bin/tvservice -o")
+
+def turn_screen_on():
+    os.system("/opt/vc/bin/tvservice -p ;fbset -depth 8; fbset -depth 16;")
+
+class TMI:
+    def __init__(self, user, oauth, channels):
+        logger.info("tmi starting up")
+        self.user = user
+        self.oauth = oauth
+        self.ircSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.ircServ = 'irc.twitch.tv'
+        self.ircChans = channels
+        self.subscribers = []
+        self.connected = False
+
+    def connect(self, port):
+        logger.info("Connecting to twitch irc")
+        self.ircSock.connect((self.ircServ, port))
+        logger.info("Connected..authenticating as %s" %self.user)
+        self.ircSock.send(str("Pass " + self.oauth + "\r\n").encode('UTF-8'))
+        self.ircSock.send(str("NICK " + self.user + "\r\n").lower().encode('UTF-8'))
+        self.ircSock.send(str("CAP REQ :twitch.tv/tags\r\n").encode('UTF-8'))
+        logger.info("Joining channels %s" %self.ircChans)
+        for chan in self.ircChans:
+            self.ircSock.send(str("JOIN " + chan + "\r\n").encode('UTF-8'))
+
+    def subscribeMessage(self,callback):
+        self.subscribers.append(callback)
+
+    def handleIRCMessage(self, ircMessage):
+        logger.debug(ircMessage)
+        match = re.search(r"@color=(?:|#([^;]*));display-name=([^;]*);emotes=([^;]*);subscriber=([^;]*);turbo=([^;]*);user-type=([^ ]*) :([^!]*)![^!]*@[^.]*.tmi.twitch.tv PRIVMSG #([^ ]*) :(.*)", ircMessage)
+        if match:
+            color = match.group(1)
+            displayname = match.group(2)
+            emotes = match.group(3)
+            subscribed = bool(int(match.group(4)))
+            turbo = bool(int(match.group(5)))
+            usertype = match.group(6)
+            username = match.group(7)
+            channel = match.group(8)
+            message = match.group(9)
+            for subscriber in self.subscribers:
+                subscriber(color,displayname,emotes,subscribed,turbo,usertype,username,channel,message)
+        if re.search(r":tmi.twitch.tv NOTICE \* :Error logging i.*", ircMessage):
+            logger.critical("Error logging in to twitch irc, check your oauth and username are set correctly in config.txt!")
+            sys.exit()
+        match = re.search(r":%s!%s@%s\.tmi\.twitch\.tv JOIN (.*)" %(self.user,self.user,self.user), ircMessage)
+        if match:
+            logger.info("Joined channel %s successfully..." %match.group(1))
+        match = re.search(r":twitchnotify!twitchnotify@twitchnotify\.tmi\.twitch\.tv PRIVMSG #([^ ]*) :([^ ]*) just subscribed!", ircMessage)
+        if match:
+            new_subscriber = match.group(2)
+            logger.info("New subscriber! %s" %new_subscriber)
+        match = re.search(r":twitchnotify!twitchnotify@twitchnotify\.tmi\.twitch\.tv PRIVMSG #([^ ]*) :([^ ]*) subscribed for (.) months in a row!", ircMessage)
+        if match:
+            subscriber =  match.group(2)
+            months = match.group(3)
+            logger.info(("%s just subscribed for the %s months in a row! Yay! Flashing the lights") %(subscriber,months))
+        elif ircMessage.find('PING ') != -1:
+            logger.info("Responding to a ping from twitch... pong!")
+            self.ircSock.send(str("PING :pong\n").encode('UTF-8'))
+
+
+    def run(self):
+        line_sep_exp = re.compile(b'\r?\n')
+        socketBuffer = b''
+        while True:
+            try:
+                self.connected = True
+                #get messages
+                socketBuffer += self.ircSock.recv(1024)
+                ircMsgs = line_sep_exp.split(socketBuffer)
+                socketBuffer = ircMsgs.pop()
+                # Deal with them
+                for ircMsg in ircMsgs:
+                    msg = ircMsg.decode('utf-8')
+                    self.handleIRCMessage(msg)
+            except:
+                raise
+
 WIDTH=0
 HEIGHT=1
 
-OUT = 0
-IN = 1
-ERR = 2
-
-PYCONSOLE = 1
-PYTHON = 2
 class Console:
     def __init__(self, screen_width, screen_height):
+        self.idle_timer = Timer(30,self.go_idle)
         self.screen = pygame.display.set_mode((screen_width,screen_height))
         self.init_default_cfg()
         self.rect = pygame.Rect(self.screen.get_rect())
@@ -21,19 +143,11 @@ class Console:
         self.bg_layer.set_alpha(self.bg_alpha)
         self.txt_layer = pygame.Surface(self.size)
         self.txt_layer.set_colorkey(self.bg_color)
-        self.font_size = 72
-        self.font = pygame.font.SysFont("Times New Roman", self.font_size)
-
+        self.font_size = 62
+        self.font = pygame.font.SysFont("droidserif.ttf", self.font_size)
         self.font_height = self.font.get_linesize()
-        self.max_lines = (self.size[HEIGHT] / self.font_height) - 1
-
-        self.max_chars = (self.size[WIDTH]/(self.font.size(ascii_letters)[WIDTH]/len(ascii_letters))) - 1
-        self.txt_wrapper = textwrap.TextWrapper()
-
-        self.c_out = self.motd
-        self.c_hist = [""]
-        self.c_hist_pos = 0
-        self.c_in = ""
+        self.max_lines = (self.size[HEIGHT] / self.font_height)
+        self.c_out = ""
         self.c_pos = 0
         self.c_draw_pos = 0
         self.c_scroll = 0
@@ -44,187 +158,123 @@ class Console:
 
     def init_default_cfg(self):
         self.bg_alpha = 255
-        self.bg_color = [0xFF,0x0,0x0]
-        self.txt_color_i = [0xFF,0xFF,0xFF]
-        self.txt_color_o = [0xCC,0xCC,0xCC]
-        self.ps1 = "] "
-        self.ps2 = ">>> "
-        self.ps3 = "... "
-        self.active = False
-        self.repeat_rate = [500,30]
-        self.python_mode = False
-        self.preserve_events = False
-        self.motd = ["[PyConsole 0.5]"]
+        self.bg_color = [0xFF,0xFF,0xFF]
+        self.txt_color_i = [0x0,0x0,0x0]
+        self.txt_color_o = [0x0,0x0,0x0]
+        self.lines = []
 
 
-    def output(self, text):
-        '''\
-        Prepare text to be displayed
-        Arguments:
-           text -- Text to be displayed
-        '''
-        if not str(text):
-            return;
+    def new_twitchmessage(self,ucolor,displayname,emotes,subscriber,turbo,usertype,username,channel,message):
+        if self.idle_timer.is_alive():
+            self.idle_timer.cancel()
+        prepends = ""
+        if usertype == "mod":
+            prepends = "@" + prepends
+        elif usertype:
+            prepends = "^" + usertype + "^_" + prepends
+        if subscriber:
+            prepends = "$" + prepends
+        prepends = "["+channel[:3]+"]" + prepends
+        before_message = "%s%s : " %(prepends,displayname or username)
+        wrapped = wraptext(before_message + message,self.font,self.size[WIDTH])
+        first_line = wrapped[0]
+        prepends_surf = self.font.render(prepends, True, self.txt_color_o)
+        if ucolor:
+            username_surf = self.font.render(displayname or username, True, (int(ucolor[:2],16), int(ucolor[2:4],16), int(ucolor[4:],16)))
+        else:
+            username_surf = self.font.render(displayname or username, True, self.txt_color_o)
+        filler_surf = self.font.render(' : ', True, self.txt_color_o)
+        message_surf = self.font.render(first_line[len(before_message):], True, self.txt_color_o)
+        self.lines.append( [prepends_surf,username_surf,filler_surf,message_surf])
+        for wrappedline in wrapped[1:]:
+            self.lines.append(self.font.render(wrappedline, True, self.txt_color_o))
 
-        try:
-            self.changed = True
-            if not isinstance(text,str):
-                text = str(text)
-            text = text.expandtabs()
-            text = text.splitlines()
-            self.txt_wrapper.width = self.max_chars
-            for line in text:
-                for w in self.txt_wrapper.wrap(line):
-                    self.c_out.append(w)
-        except:
-            pass
+        self.prepare_display()
+        self.txt_layer.fill(self.bg_color)
+        lines = self.lines[-(self.max_lines+self.c_scroll):len(self.lines)-self.c_scroll]
+        y_pos = self.size[HEIGHT]-(self.font_height*(len(lines)))
+        for line in lines:
+            if isinstance(line,list):
+                x_pos = 0
+                for part in line:
+                    self.txt_layer.blit(part, (x_pos, y_pos, 0, 0))
+                    x_pos += part.get_width()
+            else:
+                self.txt_layer.blit(line, (0, y_pos, 0, 0))
+            y_pos += self.font_height
 
-    def format_input_line(self):
-        '''\
-        Format input line to be displayed
-        '''
-        # The \v here is sort of a hack, it's just a character that isn't recognized by the font engine
-        text = self.c_in[:self.c_pos] + "\v" + self.c_in[self.c_pos+1:]
-        n_max = self.max_chars
-        vis_range = self.c_draw_pos, self.c_draw_pos + n_max
-        return text[vis_range[0]:vis_range[1]]
-
-    def draw(self):
-        '''\
-        Draw the console to the parent screen
-        '''
-        if self.changed:
-            self.changed = False
-            # Draw Output
-            self.txt_layer.fill(self.bg_color)
-            lines = self.c_out[-(self.max_lines+self.c_scroll):len(self.c_out)-self.c_scroll]
-            y_pos = self.size[HEIGHT]-(self.font_height*(len(lines)+1))
-
-            for line in lines:
-                tmp_surf = self.font.render(line, True, self.txt_color_o)
-                self.txt_layer.blit(tmp_surf, (1, y_pos, 0, 0))
-                y_pos += self.font_height
-            # Draw Input
-            tmp_surf = self.font.render(self.format_input_line(), True, self.txt_color_i)
-            self.txt_layer.blit(tmp_surf, (1,self.size[HEIGHT]-self.font_height,0,0))
-            # Clear background and blit text to it
-            self.bg_layer.fill(self.bg_color)
-            self.bg_layer.blit(self.txt_layer,(0,0,0,0))
-
-        # Draw console to parent screen
-        # self.parent_screen.fill(self.txt_color_i, (self.rect.x-1, self.rect.y-1, self.size[WIDTH]+2, self.size[HEIGHT]+2))
+        self.bg_layer.fill(self.bg_color)
+        self.bg_layer.blit(self.txt_layer,(0,0,0,0))
         pygame.draw.rect(self.screen, self.txt_color_i, (self.rect.x-1, self.rect.y-1, self.size[WIDTH]+2, self.size[HEIGHT]+2), 1)
         self.screen.blit(self.bg_layer,self.rect)
         pygame.display.update()
 
-    def add_to_history(self, text):
-        '''\
-        Add specified text to the history
-        '''
-        self.c_hist.insert(-1,text)
-        self.c_hist_pos = len(self.c_hist)-1
+        self.idle_timer = Timer(60*10,self.go_idle)
+        self.idle_timer.start()
+        return
 
-    def clear_input(self):
-        '''\
-        Clear input line and reset cursor position
-        '''
-        self.c_in = ""
-        self.c_pos = 0
-        self.c_draw_pos = 0
+    def prepare_display(self):
+        if not pygame.display.get_init():
+            turn_screen_on()
+            pygame.display.init()
+            self.screen = pygame.display.set_mode((self.size[WIDTH],self.size[HEIGHT]))
+            self.rect = pygame.Rect(self.screen.get_rect())
 
-    def set_pos(self, newpos):
-        '''\
-        Moves cursor safely
-        '''
-        self.c_pos = newpos
-        if (self.c_pos - self.c_draw_pos) >= (self.max_chars - len(self.c_ps)):
-            self.c_draw_pos = max(0, self.c_pos - (self.max_chars - len(self.c_ps)))
-        elif self.c_draw_pos > self.c_pos:
-            self.c_draw_pos = self.c_pos - (self.max_chars/2)
-            if self.c_draw_pos < 0:
-                self.c_draw_pos = 0
-                self.c_pos = 0
+    def go_idle(self):
+        turn_screen_off()
+        pygame.display.quit()
 
-    def str_insert(self, text, strn):
-        '''\
-        Insert characters at the current cursor position
-        '''
-        foo = text[:self.c_pos] + strn + text[self.c_pos:]
-        self.set_pos(self.c_pos + len(strn))
-        return foo
 
-    def convert_token(self, tok):
-        '''\
-        Convert a token to its proper type
-        '''
-        tok = tok.strip("$")
+def get_config():
+    logger.info("Loading configuration from config.txt")
+    config = None
+    if os.path.isfile("config.txt"):
         try:
-            tmp = eval(tok, self.__dict__, self.user_namespace)
-        except SyntaxError, strerror:
-            self.output("SyntaxError: " + str(strerror))
-            raise ParseError, tok
-        except TypeError, strerror:
-            self.output("TypeError: " + str(strerror))
-            raise ParseError, tok
-        except NameError, strerror:
-            self.output("NameError: " + str(strerror))
-        except:
-            self.output("Error:")
-            raise ParseError, tok
-        else:
-            return tmp
-
-    def tokenize(self, s):
-        '''\
-        Tokenize input line, convert tokens to proper types
-        '''
-        if re_is_comment.match(s):
-            return [s]
-
-        for re in self.user_syntax:
-            group = re.match(s)
-            if group:
-                self.user_syntax[re](self, group)
-                return
-
-        tokens = re_token.findall(s)
-        tokens = [i.strip("\"") for i in tokens]
-        cmd = []
-        i = 0
-        while i < len(tokens):
-            t_count = 0
-            val = tokens[i]
-            if re_is_number.match(val):
-                cmd.append(self.convert_token(val))
-            elif re_is_var.match(val):
-                cmd.append(self.convert_token(val))
-            elif val == "True":
-                cmd.append(True)
-            elif val == "False":
-                cmd.append(False)
-            elif re_is_list.match(val):
-                while not balanced(val) and (i + t_count) < len(tokens)-1:
-                    t_count += 1
-                    val += tokens[i+t_count]
-                else:
-                    if (i + t_count) < len(tokens):
-                        cmd.append(self.convert_token(val))
-                    else:
-                        raise ParseError, val
-            else:
-                cmd.append(val)
-            i += t_count + 1
-        return cmd
-
-pygame.init()
-bort = Console(1920,1080)
-import time, sys
-from pygame.locals import *
-while 1:
-    bort.draw()
-    bort.output("farts")
-    time.sleep(0.1)
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            pygame.quit()
+            config = load(open("config.txt",'r'))
+            required_settings = ['twitch_username','twitch_oauth','twitch_channels']
+            for setting in required_settings:
+                if not setting in config:
+                    logger.critical('%s is not present in config.txt, please put it there! check config_example.txt!' %setting)
+                    sys.exit()
+                #don't allow unicode!
+                if isinstance(config[setting],unicode):
+                    config[setting] = str(remove_nonascii(config[setting]))
+        except SystemExit:
             sys.exit()
+        except Exception, e:
+            logger.info(e)
+            logger.critical("Problem loading configuration file, try deleting config.txt and starting again")
+    else:
+        logger.critical("config.txt doesn't exist, please create it, refer to config_example.txt for reference")
+        sys.exit()
+    logger.info("Configuration loaded")
+    return config
+
+ # 'main'
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG,format="%(asctime)s.%(msecs)d %(levelname)s %(name)s : %(message)s",datefmt="%H:%M:%S")
+    pygame.init()
+    turn_screen_on()
+    config = get_config()
+    console = Console(1920,1080)
+    try:
+     while True:
+         alerter = TMI(config["twitch_username"],config["twitch_oauth"],config["twitch_channels"])
+         try:
+             alerter.subscribeMessage(console.new_twitchmessage)
+             alerter.connect(6667)
+             alerter.run()
+         except SystemExit:
+             sys.exit()
+         except Exception as e:
+             print e
+             logger.info(traceback.format_exc())
+
+         # If we get here, try to shutdown the bot then restart in 5 seconds
+         time.sleep(5)
+    finally:
+     #raw_input("Press enter or ctrl c to finish")
+     turn_screen_on()
+     pygame.quit()
+     console.idle_timer.cancel()
+     sys.exit()
