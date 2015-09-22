@@ -131,7 +131,6 @@ HEIGHT = 1
 
 class Console:
     def __init__(self, screen_width, screen_height):
-        self.idle_timer = Timer(30, self.disable_display)
         self.screen = pygame.display.set_mode((screen_width, screen_height))
         self.init_default_cfg()
         self.rect = pygame.Rect(self.screen.get_rect())
@@ -144,7 +143,6 @@ class Console:
         self.max_lines = (self.size[HEIGHT] / self.font_height)
         self.changed = True
         self.lines = []
-
 
     def init_default_cfg(self):
         self.bg_color = [0xFF, 0xFF, 0xFF]
