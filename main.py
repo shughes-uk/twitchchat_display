@@ -8,7 +8,7 @@ import sys
 import time
 import traceback
 # from pygame.locals import *
-from threading import Timer
+from threading import Timer, Thread
 
 import pygame
 from yaml import load
@@ -131,32 +131,24 @@ HEIGHT = 1
 
 class Console:
     def __init__(self, screen_width, screen_height):
-        self.idle_timer = Timer(30, self.go_idle)
+        self.idle_timer = Timer(30, self.disable_display)
         self.screen = pygame.display.set_mode((screen_width, screen_height))
         self.init_default_cfg()
         self.rect = pygame.Rect(self.screen.get_rect())
         self.rect.size = self.screen.get_size()
         self.size = self.screen.get_size()
-        self.bg_layer = pygame.Surface(self.size)
-        self.bg_layer.set_alpha(self.bg_alpha)
         self.txt_layer = pygame.Surface(self.size)
-        self.txt_layer.set_colorkey(self.bg_color)
         self.font_size = 62
         self.font = pygame.font.SysFont('droidserif.ttf', self.font_size)
         self.font_height = self.font.get_linesize()
         self.max_lines = (self.size[HEIGHT] / self.font_height)
-        self.c_out = ''
-        self.c_pos = 0
-        self.c_draw_pos = 0
-        self.c_scroll = 0
         self.changed = True
+        self.lines = []
+
 
     def init_default_cfg(self):
-        self.bg_alpha = 255
         self.bg_color = [0xFF, 0xFF, 0xFF]
-        self.txt_color_i = [0x0, 0x0, 0x0]
-        self.txt_color_o = [0x0, 0x0, 0x0]
-        self.lines = []
+        self.txt_color = [0x0, 0x0, 0x0]
 
     def make_prependstr(self,usertype,subscriber,channel):
         prepends = ''
@@ -174,17 +166,17 @@ class Console:
         before_message = '%s%s : ' % (prepends, username)
         wrapped = wraptext(before_message + text, self.font, self.size[WIDTH])
         first_line = wrapped[0]
-        prepends_surf = self.font.render(prepends, True, self.txt_color_o)
+        prepends_surf = self.font.render(prepends, True, self.txt_color)
         if usercolor:
             hexcolor = (int(usercolor[:2], 16), int(usercolor[2:4], 16), int(usercolor[4:], 16))
             username_surf = self.font.render(username, True, hexcolor)
         else:
-            username_surf = self.font.render(username, True, self.txt_color_o)
-        filler_surf = self.font.render(' : ', True, self.txt_color_o)
-        message_surf = self.font.render(first_line[len(before_message):], True, self.txt_color_o)
+            username_surf = self.font.render(username, True, self.txt_color)
+        filler_surf = self.font.render(' : ', True, self.txt_color)
+        message_surf = self.font.render(first_line[len(before_message):], True, self.txt_color)
         new_lines.append([prepends_surf, username_surf, filler_surf, message_surf])
         for wrappedline in wrapped[1:]:
-            new_lines.append(self.font.render(wrappedline, True, self.txt_color_o))
+            new_lines.append(self.font.render(wrappedline, True, self.txt_color))
         return new_lines
 
     def blit_lines(self, lines, surface):
@@ -202,36 +194,61 @@ class Console:
     def new_twitchmessage(self, message):
         if self.idle_timer.is_alive():
             self.idle_timer.cancel()
-
         prepends = self.make_prependstr(message['usertype'], message['subscribed'], message['channel'])
-        new_surfaces = self.prepare_surfaces(prepends, message['displayname'] or message['username'], message['color'], message['message'])
-        self.lines.extend(new_surfaces)
-        self.prepare_display()
-        self.txt_layer.fill(self.bg_color)
+        new_lines = self.prepare_surfaces(prepends, message['displayname'] or message['username'], message['color'], message['message'])
+        self.lines.extend(new_lines)
         self.lines = self.lines[-(self.max_lines):len(self.lines)]
-        self.blit_lines(self.lines, self.txt_layer)
-        self.bg_layer.fill(self.bg_color)
-        self.bg_layer.blit(self.txt_layer, (0, 0, 0, 0))
-        pygame.draw.rect(self.screen, self.txt_color_i, (self.rect.x - 1, self.rect.y - 1, self.size[WIDTH] + 2,
-                         self.size[HEIGHT] + 2), 1)
-        self.screen.blit(self.bg_layer, self.rect)
-        pygame.display.update()
-
-        self.idle_timer = Timer(60 * 10, self.go_idle)
+        self.enable_display()
+        self.changed = True
+        self.idle_timer = Timer(60 * 10, self.disable_display)
         self.idle_timer.start()
         return
 
-    def prepare_display(self):
+    def start(self):
+        self.idle_timer = Timer(60 * 10, self.disable_display)
+        self.idle_timer.start()
+        self.start_rendering()
+
+    def stop(self):
+        if self.idle_timer.is_alive():
+            self.idle_timer.cancel()
+        if self.rendering:
+            self.rendering = False
+            if self.render_thread.is_alive():
+                self.render_thread.join()
+
+    def start_rendering(self):
+        self.rendering = True
+        self.render_thread = Thread(target = self.render_loop)
+        self.render_thread.start()
+
+    def stop_rendering(self):
+        self.rendering = False
+        if self.render_thread.is_alive():
+            self.render_thread.join()
+
+    def render_loop(self):
+        while self.rendering:
+            time.sleep(0.01)
+            if self.changed:
+                self.txt_layer.fill(self.bg_color)
+                self.blit_lines(self.lines, self.txt_layer)
+                self.changed = False
+                self.screen.blit(self.txt_layer, self.rect)
+                pygame.display.update()
+
+
+    def enable_display(self):
         if not pygame.display.get_init():
             turn_screen_on()
             pygame.display.init()
             self.screen = pygame.display.set_mode((self.size[WIDTH], self.size[HEIGHT]))
             self.rect = pygame.Rect(self.screen.get_rect())
 
-    def go_idle(self):
-        turn_screen_off()
-        pygame.display.quit()
-
+    def disable_display(self):
+        if pygame.display.get_init():
+            turn_screen_off()
+            pygame.display.quit()
 
 def get_config():
     logger.info('Loading configuration from config.txt')
@@ -267,6 +284,7 @@ if __name__ == '__main__':
     turn_screen_on()
     config = get_config()
     console = Console(1920, 1080)
+    console.start()
     try:
         while True:
             alerter = TMI(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
@@ -283,6 +301,7 @@ if __name__ == '__main__':
             # If we get here, try to shutdown the bot then restart in 5 seconds
             time.sleep(5)
     finally:
+        console.stop()
         turn_screen_on()
         pygame.quit()
         console.idle_timer.cancel()
