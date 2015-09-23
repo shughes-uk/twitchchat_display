@@ -118,7 +118,7 @@ class console:
         width = current_font[0].size(text)[WIDTH]
         total_width += width
         return total_width
-    
+
     def render_text(self, text, color, aa=True):
         current_font = self.fonts[0]
         i = 0

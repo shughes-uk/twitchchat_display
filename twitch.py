@@ -5,7 +5,9 @@ import time
 from threading import Thread
 logger = logging.getLogger(name="tmi")
 
+
 class twitchirc_handler:
+
     def __init__(self, user, oauth, channels):
         logger.info('tmi starting up')
         self.user = user
@@ -14,7 +16,7 @@ class twitchirc_handler:
         self.ircServ = 'irc.twitch.tv'
         self.ircChans = channels
         self.subscribers = []
-        self.socketthread = Thread(target = self.run)
+        self.socketthread = Thread(target=self.run)
 
     def connect(self, port):
         logger.info('Connecting to twitch irc')
@@ -31,12 +33,14 @@ class twitchirc_handler:
         self.subscribers.append(callback)
 
     def handleIRCMessage(self, ircMessage):
+        print ircMessage
         #logger.debug(ircMessage)
         regex = r'@color=(?:|#([^;]*));'
         regex += r'display-name=([^;]*);'
         regex += r'emotes=([^;]*);'
         regex += r'subscriber=([^;]*);'
         regex += r'turbo=([^;]*);'
+        regex += r'user-id=([^;]*);'
         regex += r'user-type=([^ ]*)'
         regex += r' :([^!]*)![^!]*@[^.]*.tmi.twitch.tv'  # username
         regex += r' PRIVMSG #([^ ]*)'  # channel
@@ -44,17 +48,18 @@ class twitchirc_handler:
         match = re.search(regex, ircMessage)
         if match:
             result = {
-            'color' : match.group(1),
-            'displayname' : match.group(2),
-            'emotes' : match.group(3),
-            'subscribed' : bool(int(match.group(4))),
-            'turbo' : bool(int(match.group(5))),
-            'usertype' : match.group(6),
-            'username' : match.group(7),
-            'channel' : match.group(8),
-            'message' : match.group(9)
+                'color': match.group(1),
+                'displayname': match.group(2),
+                'emotes': match.group(3),
+                'subscribed': bool(int(match.group(4))),
+                'turbo': bool(int(match.group(5))),
+                'usertype': match.group(7),
+                'username': match.group(8),
+                'channel': match.group(9),
+                'message': match.group(10)
             }
             for subscriber in self.subscribers:
+                print "doop"
                 subscriber(result)
         if re.search(r':tmi.twitch.tv NOTICE \* :Error logging i.*', ircMessage):
             logger.critical('Error logging in to twitch irc, check oauth and username are set in config.txt!')
@@ -66,7 +71,7 @@ class twitchirc_handler:
     def start(self):
         if not self.socketthread.is_alive():
             self.running = True
-            self.socketthread = Thread(target = self.run)
+            self.socketthread = Thread(target=self.run)
             self.socketthread.start()
         else:
             logger.critical("Already running can't run twice")
