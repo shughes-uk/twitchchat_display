@@ -1,8 +1,12 @@
 import pygame
 import os
 import time
+import logging
 from threading import Timer, Thread
-
+from fontTools.ttLib import TTFont
+from fontTools.unicode import Unicode
+from itertools import chain
+logger = logging.getLogger("display")
 WIDTH = 0
 HEIGHT = 1
 
@@ -13,21 +17,6 @@ def turn_screen_off():
 
 def turn_screen_on():
     os.system('/opt/vc/bin/tvservice -p ;fbset -depth 8; fbset -depth 16;')
-
-
-def wraptext(text, font, maxwidth):
-    lines = []
-    while text:
-        width = 0
-        cut_i = len(text)
-        width = font.size(text[:cut_i])[WIDTH]
-        while width > maxwidth:
-            cut_i -= 1
-            width = font.size(text[:cut_i])[WIDTH]
-
-        lines.append(text[:cut_i])
-        text = text[cut_i:]
-    return lines
 
 
 class console:
@@ -42,12 +31,46 @@ class console:
         self.rect.size = self.screen.get_size()
         self.size = self.screen.get_size()
         self.txt_layer = pygame.Surface(self.size)
-        self.font_size = 62
-        self.font = pygame.font.SysFont('droidserif.ttf', self.font_size)
-        self.font_height = self.font.get_linesize()
+        self.load_fonts()
         self.max_lines = (self.size[HEIGHT] / self.font_height)
         self.changed = True
         self.lines = []
+
+    def load_fonts(self):
+        logger.info("Loading fonts")
+        self.font_size = 62
+        font_paths = ["FreeSans.ttf", "Cyberbit.ttf", "unifont.ttf"]
+        self.fonts = []
+        self.font_height = 0
+        for fontp in font_paths:
+            pg_font = pygame.font.Font(fontp, self.font_size)
+            fontinfo = self.get_font_details(fontp)
+            if pg_font.get_linesize() > self.font_height:
+                self.font_height = pg_font.get_linesize()
+            self.fonts.append((pg_font, fontinfo, fontp))
+            logger.debug("Loaded {0}".format(fontp))
+        logger.info("Fonts loaded successfully")
+
+    def get_font_details(self, font_path):
+        ttf = TTFont(font_path, 0, verbose=0, allowVID=0, ignoreDecompileErrors=True, fontNumber=-1)
+        chars = chain.from_iterable([y + (Unicode[y[0]],) for y in x.cmap.items()] for x in ttf["cmap"].tables)
+        font_chars = list(chars)
+        ttf.close()
+        char_dict = {}
+        for char_info in font_chars:
+            char_dict[char_info[0]] = True
+        return char_dict
+
+    def required_font(self, char):
+        #probably dont need a crazy font for ascii range
+        if ord(char) > 128:
+            for font in self.fonts:
+                if ord(char) in font[1]:
+                    return font
+            logger.critical("Couldn't find font for character {0}".format(char))
+            return self.fonts[0]
+        else:
+            return self.fonts[0]
 
     def init_default_cfg(self):
         self.bg_color = [0xFF, 0xFF, 0xFF]
@@ -64,34 +87,84 @@ class console:
         prepends = '[' + channel[:3] + ']' + prepends
         return prepends
 
+    def wraptext(self, text, maxwidth):
+        lines = []
+        while text:
+            width = 0
+            cut_i = len(text)
+            width = self.get_text_width(text[:cut_i])
+            while width > maxwidth:
+                cut_i -= 1
+                width = self.get_text_width(text[:cut_i])
+            lines.append(text[:cut_i])
+            text = text[cut_i:]
+        return lines
+
+    def get_text_width(self, text):
+        current_font = self.fonts[0]
+        i = 0
+        total_width = 0
+        while i < len(text):
+            rq_font = self.required_font(text[i])
+            if rq_font != current_font:
+                if text[:i]:
+                    width = current_font[0].size(text[:i])[WIDTH]
+                    total_width += width
+                    text = text[i:]
+                    i = 0
+                current_font = rq_font
+            else:
+                i += 1
+        width = current_font[0].size(text)[WIDTH]
+        total_width += width
+        return total_width
+    
+    def render_text(self, text, color, aa=True):
+        current_font = self.fonts[0]
+        i = 0
+        surfaces = []
+        while i < len(text):
+            rq_font = self.required_font(text[i])
+            if rq_font != current_font:
+                if text[:i]:
+                    part = current_font[0].render(text[:i], aa, color)
+                    surfaces.append(part)
+                    text = text[i:]
+                    i = 0
+                current_font = rq_font
+            else:
+                i += 1
+        part = current_font[0].render(text, aa, color)
+        surfaces.append(part)
+        return surfaces
+
     def prepare_surfaces(self, prepends, username, usercolor, text):
+        # each line consists of a list of surfaces
         new_lines = []
+        new_line = []
         before_message = '%s%s : ' % (prepends, username)
-        wrapped = wraptext(before_message + text, self.font, self.size[WIDTH])
+        wrapped = self.wraptext(before_message + text, self.size[WIDTH])
         first_line = wrapped[0]
-        prepends_surf = self.font.render(prepends, True, self.txt_color)
+        new_line.extend(self.render_text(prepends, self.txt_color))
         if usercolor:
             hexcolor = (int(usercolor[:2], 16), int(usercolor[2:4], 16), int(usercolor[4:], 16))
-            username_surf = self.font.render(username, True, hexcolor)
+            new_line.extend(self.render_text(username, hexcolor))
         else:
-            username_surf = self.font.render(username, True, self.txt_color)
-        filler_surf = self.font.render(' : ', True, self.txt_color)
-        message_surf = self.font.render(first_line[len(before_message):], True, self.txt_color)
-        new_lines.append([prepends_surf, username_surf, filler_surf, message_surf])
+            new_line.extend(self.render_text(username, self.txt_color))
+        new_line.extend(self.render_text(' : ', self.txt_color))
+        new_line.extend(self.render_text(first_line[len(before_message):], self.txt_color))
+        new_lines.append(new_line)
         for wrappedline in wrapped[1:]:
-            new_lines.append(self.font.render(wrappedline, True, self.txt_color))
+            new_lines.append(self.render_text(wrappedline, self.txt_color))
         return new_lines
 
     def blit_lines(self, lines, surface):
         y_pos = self.size[HEIGHT] - (self.font_height * (len(lines)))
         for line in lines:
-            if isinstance(line, list):
-                x_pos = 0
-                for part in line:
-                    surface.blit(part, (x_pos, y_pos, 0, 0))
-                    x_pos += part.get_width()
-            else:
-                surface.blit(line, (0, y_pos, 0, 0))
+            x_pos = 0
+            for part in line:
+                surface.blit(part, (x_pos, y_pos, 0, 0))
+                x_pos += part.get_width()
             y_pos += self.font_height
 
     def new_twitchmessage(self, message):

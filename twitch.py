@@ -5,9 +5,7 @@ import time
 from threading import Thread
 logger = logging.getLogger(name="tmi")
 
-
 class twitchirc_handler:
-
     def __init__(self, user, oauth, channels):
         logger.info('tmi starting up')
         self.user = user
@@ -16,7 +14,7 @@ class twitchirc_handler:
         self.ircServ = 'irc.twitch.tv'
         self.ircChans = channels
         self.subscribers = []
-        self.socketthread = Thread(target=self.run)
+        self.socketthread = Thread(target = self.run)
 
     def connect(self, port):
         logger.info('Connecting to twitch irc')
@@ -46,15 +44,15 @@ class twitchirc_handler:
         match = re.search(regex, ircMessage)
         if match:
             result = {
-                'color': match.group(1),
-                'displayname': match.group(2),
-                'emotes': match.group(3),
-                'subscribed': bool(int(match.group(4))),
-                'turbo': bool(int(match.group(5))),
-                'usertype': match.group(6),
-                'username': match.group(7),
-                'channel': match.group(8),
-                'message': match.group(9)
+            'color' : match.group(1),
+            'displayname' : match.group(2),
+            'emotes' : match.group(3),
+            'subscribed' : bool(int(match.group(4))),
+            'turbo' : bool(int(match.group(5))),
+            'usertype' : match.group(6),
+            'username' : match.group(7),
+            'channel' : match.group(8),
+            'message' : match.group(9)
             }
             for subscriber in self.subscribers:
                 subscriber(result)
@@ -68,7 +66,7 @@ class twitchirc_handler:
     def start(self):
         if not self.socketthread.is_alive():
             self.running = True
-            self.socketthread = Thread(target=self.run)
+            self.socketthread = Thread(target = self.run)
             self.socketthread.start()
         else:
             logger.critical("Already running can't run twice")
@@ -87,7 +85,6 @@ class twitchirc_handler:
             try:
                 # get messages
                 socketBuffer += self.ircSock.recv(1024)
-                print repr(socketBuffer)
                 ircMsgs = line_sep_exp.split(socketBuffer)
                 socketBuffer = ircMsgs.pop()
                 # Deal with them
