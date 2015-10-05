@@ -39,7 +39,7 @@ class console:
     def load_fonts(self):
         logger.info("Loading fonts")
         self.font_size = 62
-        font_paths = ["FreeSans.ttf", "Cyberbit.ttf", "unifont.ttf"]
+        font_paths = ["FreeSans.ttf"]#, "Cyberbit.ttf", "unifont.ttf"]
         self.fonts = []
         self.font_height = 0
         for fontp in font_paths:
@@ -147,6 +147,7 @@ class console:
         first_line = wrapped[0]
         new_line.extend(self.render_text(prepends, self.txt_color))
         if usercolor:
+            usercolor = usercolor[1:] #cut off the # from the start of the string
             hexcolor = (int(usercolor[:2], 16), int(usercolor[2:4], 16), int(usercolor[4:], 16))
             new_line.extend(self.render_text(username, hexcolor))
         else:
@@ -167,12 +168,12 @@ class console:
                 x_pos += part.get_width()
             y_pos += self.font_height
 
-    def new_twitchmessage(self, message):
+    def new_twitchmessage(self, result):
         if self.idle_timer.is_alive():
             self.idle_timer.cancel()
-        prepends = self.make_prependstr(message['user-type'], message['subscriber'], message['channel'])
-        new_lines = self.prepare_surfaces(prepends, message['display-name'] or message['username'], message['color'],
-                                          message['message'])
+        prepends = self.make_prependstr(result['user-type'], result['subscriber'], result['channel'])
+        new_lines = self.prepare_surfaces(prepends, result['display-name'] or result['username'], result['color'],
+                                          result['message'])
         self.lines.extend(new_lines)
         self.lines = self.lines[-(self.max_lines):len(self.lines)]
         self.enable_display()
