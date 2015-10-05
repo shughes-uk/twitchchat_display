@@ -39,7 +39,7 @@ class console:
     def load_fonts(self):
         logger.info("Loading fonts")
         self.font_size = 62
-        font_paths = ["FreeSans.ttf"]#, "Cyberbit.ttf", "unifont.ttf"]
+        font_paths = ["FreeSans.ttf", "Cyberbit.ttf", "unifont.ttf"]
         self.fonts = []
         self.font_height = 0
         for fontp in font_paths:
