@@ -67,14 +67,14 @@ class console:
             for font in self.fonts:
                 if ord(char) in font[1]:
                     return font
-            logger.critical("Couldn't find font for character {0}".format(char))
+            logger.critical("Couldn't find font for character {0}".format(repr(char)))
             return self.fonts[0]
         else:
             return self.fonts[0]
 
     def init_default_cfg(self):
-        self.bg_color = [0xFF, 0xFF, 0xFF]
-        self.txt_color = [0x0, 0x0, 0x0]
+        self.bg_color = [0x32, 0x32, 0x3E]
+        self.txt_color = [0xFF, 0xFF, 0xFF]
 
     def make_prependstr(self, usertype, subscriber, channel):
         prepends = ''

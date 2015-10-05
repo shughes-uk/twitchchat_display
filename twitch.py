@@ -33,7 +33,6 @@ class twitchirc_handler:
         self.subscribers.append(callback)
 
     def handleIRCMessage(self, ircMessage):
-        print ircMessage
         #logger.debug(ircMessage)
         regex = r'@color=(?:|#([^;]*));'
         regex += r'display-name=([^;]*);'
@@ -59,7 +58,6 @@ class twitchirc_handler:
                 'message': match.group(10)
             }
             for subscriber in self.subscribers:
-                print "doop"
                 subscriber(result)
         if re.search(r':tmi.twitch.tv NOTICE \* :Error logging i.*', ircMessage):
             logger.critical('Error logging in to twitch irc, check oauth and username are set in config.txt!')
