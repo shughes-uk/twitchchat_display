@@ -170,8 +170,8 @@ class console:
     def new_twitchmessage(self, message):
         if self.idle_timer.is_alive():
             self.idle_timer.cancel()
-        prepends = self.make_prependstr(message['usertype'], message['subscribed'], message['channel'])
-        new_lines = self.prepare_surfaces(prepends, message['displayname'] or message['username'], message['color'],
+        prepends = self.make_prependstr(message['user-type'], message['subscriber'], message['channel'])
+        new_lines = self.prepare_surfaces(prepends, message['display-name'] or message['username'], message['color'],
                                           message['message'])
         self.lines.extend(new_lines)
         self.lines = self.lines[-(self.max_lines):len(self.lines)]

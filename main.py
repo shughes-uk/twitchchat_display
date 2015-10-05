@@ -4,7 +4,7 @@ import signal
 import sys
 import traceback
 from yaml import load
-from twitch import twitchirc_handler
+from twitchchat import twitch_chat
 from display import console
 from time import sleep
 logger = logging.getLogger('twitch_monitor')
@@ -53,8 +53,8 @@ if __name__ == '__main__':
                         datefmt='%H:%M:%S')
     config = get_config()
     console = console(1920, 1080)
-    tirc = twitchirc_handler(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
-    tirc.subscribeMessage(console.new_twitchmessage)
+    tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
+    tirc.subscribeChatMessage(console.new_twitchmessage)
     try:
         console.start()
         tirc.connect(6667)
