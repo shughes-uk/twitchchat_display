@@ -57,10 +57,6 @@ if __name__ == '__main__':
     tirc.subscribeChatMessage(console.new_twitchmessage)
     try:
         console.start()
-        tirc.connect(6667)
-        tirc.start()
-        while True:
-            sleep(0.1)
+        tirc.run()
     finally:
         console.stop()
-        tirc.stop()
