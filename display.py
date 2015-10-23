@@ -171,7 +171,7 @@ class console:
     def new_twitchmessage(self, result):
         if self.idle_timer.is_alive():
             self.idle_timer.cancel()
-        prepends = self.make_prependstr(result['user-type'], result['subscriber'], result['channel'])
+        prepends = self.make_prependstr(result['user-type'], bool(int(result['subscriber'])), result['channel'])
         new_lines = self.prepare_surfaces(prepends, result['display-name'] or result['username'], result['color'],
                                           result['message'])
         self.lines.extend(new_lines)
