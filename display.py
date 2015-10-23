@@ -6,9 +6,17 @@ from threading import Timer, Thread
 from fontTools.ttLib import TTFont
 from fontTools.unicode import Unicode
 from itertools import chain
+import urllib
+import io
+import random
+import re
+import webcolors
 logger = logging.getLogger("display")
 WIDTH = 0
 HEIGHT = 1
+
+TWITCH_COLORS = ['Blue', 'Coral', 'DodgerBlue', 'SpringGreen', 'YellowGreen', 'Green', 'OrangeRed', 'Red', 'GoldenRod',
+                 'HotPink', 'CadetBlue', 'SeaGreen', 'Chocolate', 'BlueViolet', 'Firebrick']
 
 
 def turn_screen_off():
@@ -35,6 +43,39 @@ class console:
         self.max_lines = (self.size[HEIGHT] / self.font_height)
         self.changed = True
         self.lines = []
+        self.emotes = {}
+        self.usercolors = {}
+
+    def load_emote(self, id):
+        if not os.path.isfile('emotecache/{0}.png'.format(id)):
+            if not os.path.isdir('emotecache'):
+                os.mkdir('emotecache')
+            response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/3.0'.format(id))
+            if response.getcode() == 404:
+                response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/2.0'.format(id))
+            if response.getcode() == 404:
+                response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/1.0'.format(id))
+            image_str = response.read()
+            img_file = open('emotecache/{0}.png'.format(id), 'w')
+            img_file.write(image_str)
+            img_file.close()
+        else:
+            image_str = open('emotecache/{0}.png'.format(id), 'r').read()
+        image_file = io.BytesIO(image_str)
+        surface = pygame.image.load(image_file)
+        ratio = self.font_height / float(surface.get_height())
+        new_size = (int(surface.get_width() * ratio), self.font_height)
+        resized = pygame.transform.scale(surface, new_size)
+        self.emotes[id] = resized.convert_alpha()
+
+    def blit_quicktext(self, text):
+        font = pygame.font.Font("FreeSans.ttf", 72)
+        surf = font.render(text, True, self.txt_color)
+        self.txt_layer.fill(self.bg_color)
+        self.txt_layer.blit(surf, (self.rect.width / 2 - surf.get_rect().width / 2,
+                                   self.rect.height / 2 - surf.get_rect().height / 2, 0, 0))
+        self.screen.blit(self.txt_layer, self.rect)
+        pygame.display.update()
 
     def load_fonts(self):
         logger.info("Loading fonts")
@@ -43,6 +84,7 @@ class console:
         self.fonts = []
         self.font_height = 0
         for fontp in font_paths:
+            self.blit_quicktext("Loading font {0}".format(fontp))
             pg_font = pygame.font.Font(fontp, self.font_size)
             fontinfo = self.get_font_details(fontp)
             if pg_font.get_linesize() > self.font_height:
@@ -62,7 +104,7 @@ class console:
         return char_dict
 
     def required_font(self, char):
-        #probably dont need a crazy font for ascii range
+        # probably dont need a crazy font for ascii range
         if ord(char) > 128:
             for font in self.fonts:
                 if ord(char) in font[1]:
@@ -89,16 +131,26 @@ class console:
 
     def wraptext(self, text, maxwidth):
         lines = []
+        cut_i = len(text) - 1
         while text:
-            width = 0
-            cut_i = len(text)
-            width = self.get_text_width(text[:cut_i])
-            while width > maxwidth:
+            width = self.get_list_rendered_length(text[:cut_i + 1])
+            if width > maxwidth:
                 cut_i -= 1
-                width = self.get_text_width(text[:cut_i])
-            lines.append(text[:cut_i])
-            text = text[cut_i:]
+            else:
+                lines.append(text[:cut_i + 1])
+                text = text[cut_i + 1:]
+                if text:
+                    cut_i = len(text) - 1
         return lines
+
+    def get_list_rendered_length(self, target_list):
+        width = 0
+        for item in target_list:
+            if isinstance(item, str):
+                width += self.get_text_width(item)
+            else:
+                width += item.get_width()
+        return width
 
     def get_text_width(self, text):
         current_font = self.fonts[0]
@@ -120,44 +172,103 @@ class console:
         return total_width
 
     def render_text(self, text, color, aa=True):
-        current_font = self.fonts[0]
-        i = 0
         surfaces = []
-        while i < len(text):
-            rq_font = self.required_font(text[i])
-            if rq_font != current_font:
-                if text[:i]:
-                    part = current_font[0].render(text[:i], aa, color)
-                    surfaces.append(part)
-                    text = text[i:]
-                    i = 0
-                current_font = rq_font
-            else:
-                i += 1
-        part = current_font[0].render(text, aa, color)
-        surfaces.append(part)
+        if isinstance(text, list):
+            for item in text:
+                surfaces.extend(self.render_text(item, color, aa))
+        elif isinstance(text, str):
+            current_font = self.fonts[0]
+            i = 0
+            while i < len(text):
+                rq_font = self.required_font(text[i])
+                if rq_font != current_font:
+                    if text[:i]:
+                        part = current_font[0].render(text[:i], aa, color)
+                        surfaces.append(part)
+                        text = text[i:]
+                        i = 0
+                    current_font = rq_font
+                else:
+                    i += 1
+            part = current_font[0].render(text, aa, color)
+            surfaces.append(part)
+        else:
+            return [text]
         return surfaces
 
-    def prepare_surfaces(self, prepends, username, usercolor, text):
+    def make_emote_surfs(self, message):
+        for emote in self.emotes:
+            matches = re.finditer(emote['regex'], message)
+            indexes = []
+            for match in matches:
+                indexes.append(match.span(0))
+
+    def get_emote(self, id):
+        if id not in self.emotes:
+            self.load_emote(id)
+        return self.emotes[id]
+
+    def generate_emoteindex(self, emotelist):
+        emoteindxs = {}
+        for emoteinfo in emotelist:
+            id_rgx = r"(\d*):"
+            id = re.search(id_rgx, emoteinfo)
+            index_rgx = r"(\d*)-(\d*)"
+            results = re.findall(index_rgx, emoteinfo)
+            for indexes in results:
+                emoteindxs[int(indexes[0])] = (int(indexes[1]), id.group(1))
+        return emoteindxs
+
+    def insert_emotesurfs(self, text, emoteindxs):
+        rendered = []
+        i = 0
+        while i < len(text):
+            if i in emoteindxs:
+                start_index = i
+                end_index, id = emoteindxs[start_index]
+                rendered.append(self.get_emote(id))
+                i = end_index + 1
+            else:
+                rendered.append(text[i])
+                i += 1
+        return rendered
+
+    def render_emotes(self, text, emotes):
+        if emotes:
+            emotelist = emotes.split('/')
+            emoteindxs = self.generate_emoteindex(emotelist)
+            rendered = self.insert_emotesurfs(text, emoteindxs)
+            return rendered
+        else:
+            return list(text)
+
+    def prepare_surfaces(self, prepends, username, usercolor, text, emotes):
         # each line consists of a list of surfaces
         new_lines = []
         new_line = []
         before_message = '%s%s : ' % (prepends, username)
-        wrapped = self.wraptext(before_message + text, self.size[WIDTH])
+        text_with_rendered_emotes = self.render_emotes(text, emotes)
+        text_with_rendered_emotes.insert(0, before_message)
+        wrapped = self.wraptext(text_with_rendered_emotes, self.size[WIDTH])
         first_line = wrapped[0]
         new_line.extend(self.render_text(prepends, self.txt_color))
         if usercolor:
-            usercolor = usercolor[1:] #cut off the # from the start of the string
+            usercolor = usercolor[1:]  # cut off the # from the start of the string
             hexcolor = (int(usercolor[:2], 16), int(usercolor[2:4], 16), int(usercolor[4:], 16))
-            new_line.extend(self.render_text(username, hexcolor))
         else:
-            new_line.extend(self.render_text(username, self.txt_color))
+            hexcolor = self.get_usercolor(username)
+        new_line.extend(self.render_text(username, hexcolor))
         new_line.extend(self.render_text(' : ', self.txt_color))
-        new_line.extend(self.render_text(first_line[len(before_message):], self.txt_color))
+        new_line.extend(self.render_text(first_line[1:], self.txt_color))
         new_lines.append(new_line)
         for wrappedline in wrapped[1:]:
             new_lines.append(self.render_text(wrappedline, self.txt_color))
         return new_lines
+
+    def get_usercolor(self, username):
+        if username not in self.usercolors:
+            self.usercolors[username] = webcolors.name_to_rgb(random.choice(TWITCH_COLORS))
+        return self.usercolors[username]
 
     def blit_lines(self, lines, surface):
         y_pos = self.size[HEIGHT] - (self.font_height * (len(lines)))
@@ -173,7 +284,7 @@ class console:
             self.idle_timer.cancel()
         prepends = self.make_prependstr(result['user-type'], bool(int(result['subscriber'])), result['channel'])
         new_lines = self.prepare_surfaces(prepends, result['display-name'] or result['username'], result['color'],
-                                          result['message'])
+                                          result['message'], result['emotes'])
         self.lines.extend(new_lines)
         self.lines = self.lines[-(self.max_lines):len(self.lines)]
         self.enable_display()

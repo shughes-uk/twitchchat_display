@@ -1,7 +1,7 @@
 import socket
 import re
 import logging
-import time
+import sys
 from threading import Thread
 logger = logging.getLogger(name="tmi")
 
@@ -33,7 +33,7 @@ class twitchirc_handler:
         self.subscribers.append(callback)
 
     def handleIRCMessage(self, ircMessage):
-        #logger.debug(ircMessage)
+        # logger.debug(ircMessage)
         regex = r'@color=(?:|#([^;]*));'
         regex += r'display-name=([^;]*);'
         regex += r'emotes=([^;]*);'
