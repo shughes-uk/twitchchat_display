@@ -84,7 +84,7 @@ class console:
         response = urllib.urlopen('https://api.twitch.tv/kraken/chat/{0}/badges'.format(channel))
         data = json.load(response)
         for btype in BADGE_TYPES:
-            if btype in data:
+            if data[btype]:
                 response = urllib.urlopen(data[btype]['image'])
                 image_str = response.read()
                 img_file = open('badgecache/{0}_{1}.png'.format(channel, btype), 'w')
