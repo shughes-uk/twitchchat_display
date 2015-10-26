@@ -23,7 +23,7 @@ class TwitchHandler(object):
                 self.online_status[name] = True
             else:
                 self.online_status[name] = False
-            self.follower_cache[name] = twitch.follows.by_channel(name, limit=1)
+            self.follower_cache[name] = twitch.follows.by_channel(name, limit=25)['follows']
 
     def subscribe_new_follow(self, callback):
         self.follower_callbacks.append(callback)
@@ -43,7 +43,6 @@ class TwitchHandler(object):
         if self.streaming_callbacks or self.follower_callbacks:
             while self.running:
                 if self.next_check < datetime.datetime.now():
-                    print 'Checking stuff'
                     if self.streaming_callbacks:
                         self.check_streaming()
                     if self.follower_callbacks:
@@ -68,12 +67,16 @@ class TwitchHandler(object):
                     callback(name, False)
 
     def check_followers(self):
-        for name in self.online_status:
-            lastfollower = twitch.follows.by_channel(name, limit=1)
-            if lastfollower != self.follower_cache[name]:
-                self.follower_cache[name] = lastfollower
+        for streamer_name in self.online_status:
+            latest_follows = twitch.follows.by_channel(streamer_name, limit=25)['follows']
+            if latest_follows != self.follower_cache[streamer_name]:
+                new_follows = []
+                for follow in latest_follows:
+                    if follow not in self.follower_cache[streamer_name]:
+                        new_follows.append(follow['user'])
+                self.follower_cache[streamer_name] = latest_follows
                 for callback in self.follower_callbacks:
-                    callback(lastfollower['follows'][0]['user'], name)
+                    callback(new_follows, streamer_name)
 
     def stop(self):
         self.logger.info("Attempting to stop twitch api polling")

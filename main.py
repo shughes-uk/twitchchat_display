@@ -6,6 +6,7 @@ from yaml import load
 from twitchchat import twitch_chat
 from display import console
 from twitch_handler import TwitchHandler
+import argparse
 logger = logging.getLogger('twitch_monitor')
 
 
@@ -47,13 +48,29 @@ def get_config():
 
 if __name__ == '__main__':
     signal.signal(signal.SIGTERM, signal_term_handler)
-    logging.basicConfig(level=logging.DEBUG,
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--test", help="Subscribe to featured channels to aid testing", action="store_true")
+    parser.add_argument('-d',
+                        '--debug',
+                        help="Enable debugging statements",
+                        action="store_const",
+                        dest="loglevel",
+                        const=logging.DEBUG,
+                        default=logging.INFO,)
+    args = parser.parse_args()
+    logging.basicConfig(level=args.loglevel,
                         format='%(asctime)s.%(msecs)d %(levelname)s %(name)s : %(message)s',
                         datefmt='%H:%M:%S')
     config = get_config()
+    if args.test:
+        from twitch.api import v3 as twitch
+        featured_streams = twitch.streams.featured(limit=5)['featured']
+        for x in featured_streams:
+            config['twitch_channels'].append(x['stream']['channel']['name'])
+
     console = console(1920, 1080)
     thandler = TwitchHandler(config['twitch_channels'])
-    thandler.subscribe_new_follow(console.new_follower)
+    thandler.subscribe_new_follow(console.new_followers)
     tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
     tirc.subscribeChatMessage(console.new_twitchmessage)
 

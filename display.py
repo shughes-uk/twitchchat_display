@@ -355,8 +355,19 @@ class console:
         self.lines = self.lines[-(self.max_lines):len(self.lines)]
         return
 
-    def new_follower(self, followerinfo, name):
-        self.follower_to_display = (followerinfo['display_name'] or followerinfo['name'], name)
+    def render_new_followers(self, new_followers, name):
+        lines = []
+        for follower in new_followers:
+            text = "{0} followed {1}!".format(follower['display_name'] or follower['name'],name)
+            logger.info(text)
+            rendered = self.render_text(text, self.txt_color)
+            lines.append(rendered)
+        return lines
+
+    def new_followers(self, new_followers, name):
+        new_lines = self.render_new_followers(new_followers, name)
+        self.lines.extend(new_lines)
+        self.lines = self.lines[-(self.max_lines):len(self.lines)]
         self.new_activity()
         pass
 
@@ -389,14 +400,6 @@ class console:
         while self.rendering:
             time.sleep(0.1)
             if self.changed:
-                if self.follower_to_display:
-                    self.blit_quicktext("{0} Followed {1}!".format(self.follower_to_display[0],
-                                                                   self.follower_to_display[1]))
-                    self.follower_to_display = None
-                    self.changed = False
-                    self.display_follower_timer = Timer(3, self.start_rendering)
-                    self.display_follower_timer.start()
-                    break
                 self.txt_layer.fill(self.bg_color)
                 self.blit_lines(self.lines, self.txt_layer)
                 self.changed = False
