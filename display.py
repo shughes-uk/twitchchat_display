@@ -387,7 +387,7 @@ class console:
 
     def render_loop(self):
         while self.rendering:
-            time.sleep(0.01)
+            time.sleep(0.1)
             if self.changed:
                 if self.follower_to_display:
                     self.blit_quicktext("{0} Followed {1}!".format(self.follower_to_display[0],
