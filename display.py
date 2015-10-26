@@ -368,13 +368,26 @@ class TwitchChatDisplay(object):
         prepends = [self.twitchimages.get_logo(channel)]
         if usertype == 'mod':
             prepends.append(self.twitchimages.get_badge(channel, 'mod'))
+        elif usertype == 'staff':
+            prepends.append(self.twitchimages.get_badge(channel, 'staff'))
         elif usertype:
-            prepends.append(self.render_text('^' + usertype + '^_', self.txt_color))
+            prepends.extend(self.render_text(usertype, self.txt_color))
         if subscriber:
             prepends.append(self.twitchimages.get_badge(channel, 'subscriber'))
         return prepends
 
     def render_new_twitchmessage(self, message):
+        # ircMessage  = "@color=#8A2BE2;display-name=fugi;emotes=;subscriber=1;turbo=0;user-id=51837161;user-type=staff :fugi!fugi@fugi.tmi.twitch.tv PRIVMSG #amaliuz :@Noooxz The US is rich, it's just unfairly distributed"
+        # arg_regx = r"([^=;]*)=([^ ;]*)"
+        # args = dict(re.findall(arg_regx, ircMessage[1:]))
+        # regex = r'^@[^ ]* :([^!]*)![^!]*@[^.]*.tmi.twitch.tv'  # username
+        # regex += r' PRIVMSG #([^ ]*)'  # channel
+        # regex += r' :(.*)'  # message
+        # match = re.search(regex, ircMessage)
+        # args['username'] = match.group(1)
+        # args['channel'] = match.group(2)
+        # args['message'] = match.group(3)
+        # message = args
         # each line consists of a list of surfaces
         rendered_line = self.render_prepends(message['user-type'], bool(int(message['subscriber'])), message['channel'])
         ucolor = self.get_usercolor(message['color'], message['username'])
