@@ -366,12 +366,8 @@ class TwitchChatDisplay(object):
 
     def render_prepends(self, usertype, subscriber, channel):
         prepends = [self.twitchimages.get_logo(channel)]
-        if usertype == 'mod':
-            prepends.append(self.twitchimages.get_badge(channel, 'mod'))
-        elif usertype == 'staff':
-            prepends.append(self.twitchimages.get_badge(channel, 'staff'))
-        elif usertype:
-            prepends.extend(self.render_text(usertype, self.txt_color))
+        if usertype:
+            prepends.append(self.twitchimages.get_badge(channel, usertype))
         if subscriber:
             prepends.append(self.twitchimages.get_badge(channel, 'subscriber'))
         return prepends
