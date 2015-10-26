@@ -2,11 +2,10 @@ import logging
 import os
 import signal
 import sys
-import traceback
 from yaml import load
 from twitchchat import twitch_chat
 from display import console
-from time import sleep
+from twitch_handler import TwitchHandler
 logger = logging.getLogger('twitch_monitor')
 
 
@@ -53,10 +52,15 @@ if __name__ == '__main__':
                         datefmt='%H:%M:%S')
     config = get_config()
     console = console(1920, 1080)
+    thandler = TwitchHandler(config['twitch_channels'])
+    thandler.subscribe_new_follow(console.new_follower)
     tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
     tirc.subscribeChatMessage(console.new_twitchmessage)
+
     try:
         console.start()
+        thandler.start()
         tirc.run()
     finally:
         console.stop()
+        thandler.stop()
