@@ -195,7 +195,6 @@ class console:
         return prepends
 
     def wraptext(self, text, maxwidth):
-        print text
         lines = []
         cut_i = len(text) - 1
         while text:
