@@ -34,6 +34,7 @@ class TwitchHandler(object):
     def start(self):
         self.running = True
         self.thread = threading.Thread(target=self.run)
+        self.thread.daemon = True
         self.thread.start()
 
     def run(self):

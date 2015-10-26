@@ -4,7 +4,7 @@ import signal
 import sys
 from yaml import load
 from twitchchat import twitch_chat
-from display import console
+from display import TwitchChatDisplay
 from twitch_handler import TwitchHandler
 import argparse
 logger = logging.getLogger('twitch_monitor')
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         for x in featured_streams:
             config['twitch_channels'].append(x['stream']['channel']['name'])
 
-    console = console(1920, 1080)
+    console = TwitchChatDisplay(1920, 1080)
     thandler = TwitchHandler(config['twitch_channels'])
     thandler.subscribe_new_follow(console.new_followers)
     tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
