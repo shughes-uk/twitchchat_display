@@ -1,5 +1,9 @@
 config.txt
-
+badgecache
+emotecache
+logocache
+.DS_Store
+test.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

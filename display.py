@@ -6,11 +6,13 @@ from threading import Timer, Thread
 from fontTools.ttLib import TTFont
 from fontTools.unicode import Unicode
 from itertools import chain
+import json
 import urllib
 import io
 import random
 import re
 import webcolors
+BADGE_TYPES = ['global_mod', 'admin', 'broadcaster', 'mod', 'staff', 'turbo', 'subscriber']
 logger = logging.getLogger("display")
 WIDTH = 0
 HEIGHT = 1
@@ -45,6 +47,70 @@ class console:
         self.lines = []
         self.emotes = {}
         self.usercolors = {}
+        self.follower_to_display = None
+        self.badges = {}
+        self.logos = {}
+
+    def download_logo(self, channel):
+        response = urllib.urlopen('https://api.twitch.tv/kraken/users/{0}'.format(channel))
+        data = json.load(response)
+        response = urllib.urlopen(data['logo'])
+        image_str = response.read()
+        img_file = open('logocache/{0}.png'.format(channel), 'w')
+        img_file.write(image_str)
+        img_file.close()
+
+    def load_logo(self, channel):
+        if not os.path.isfile('logocache/{0}.png'.format(channel)):
+            if not os.path.isdir('logocache'):
+                os.mkdir('logocache')
+            self.download_logo(channel)
+        self.logos[channel] = {}
+        if os.path.isfile('logocache/{0}.png'.format(channel)):
+            image_str = open('logocache/{0}.png'.format(channel), 'r').read()
+            image_file = io.BytesIO(image_str)
+            surface = pygame.image.load(image_file)
+            ratio = self.font_height / float(surface.get_height())
+            new_size = (int(surface.get_width() * ratio), self.font_height)
+            resized = pygame.transform.scale(surface, new_size)
+            self.logos[channel] = resized.convert_alpha()
+
+    def get_logo(self, channel):
+        if channel not in self.logos:
+            self.load_logo(channel)
+        return self.logos[channel]
+
+    def download_badges(self, channel):
+        response = urllib.urlopen('https://api.twitch.tv/kraken/chat/{0}/badges'.format(channel))
+        data = json.load(response)
+        for btype in BADGE_TYPES:
+            if btype in data:
+                response = urllib.urlopen(data[btype]['image'])
+                image_str = response.read()
+                img_file = open('badgecache/{0}_{1}.png'.format(channel, btype), 'w')
+                img_file.write(image_str)
+                img_file.close()
+
+    def load_badges(self, channel):
+        if not os.path.isfile('badgecache/{0}_{1}.png'.format(channel, BADGE_TYPES[0])):
+            if not os.path.isdir('badgecache'):
+                os.mkdir('badgecache')
+            self.download_badges(channel)
+        self.badges[channel] = {}
+        for btype in BADGE_TYPES:
+            if os.path.isfile('badgecache/{0}_{1}.png'.format(channel, btype)):
+                image_str = open('badgecache/{0}_{1}.png'.format(channel, btype), 'r').read()
+                image_file = io.BytesIO(image_str)
+                surface = pygame.image.load(image_file)
+                ratio = self.font_height / float(surface.get_height())
+                new_size = (int(surface.get_width() * ratio), self.font_height)
+                resized = pygame.transform.scale(surface, new_size)
+                self.badges[channel][btype] = resized.convert_alpha()
+
+    def get_badge(self, channel, btype):
+        if channel not in self.badges:
+            self.load_badges(channel)
+        return self.badges[channel][btype]
 
     def load_emote(self, id):
         if not os.path.isfile('emotecache/{0}.png'.format(id)):
@@ -119,17 +185,17 @@ class console:
         self.txt_color = [0xFF, 0xFF, 0xFF]
 
     def make_prependstr(self, usertype, subscriber, channel):
-        prepends = ''
+        prepends = [self.get_logo(channel)]
         if usertype == 'mod':
-            prepends = '@' + prepends
+            prepends.append(self.get_badge(channel, 'mod'))
         elif usertype:
-            prepends = '^' + usertype + '^_' + prepends
+            prepends.append('^' + usertype + '^_')
         if subscriber:
-            prepends = '$' + prepends
-        prepends = '[' + channel[:3] + ']' + prepends
+            prepends.append(self.get_badge(channel, 'subscriber'))
         return prepends
 
     def wraptext(self, text, maxwidth):
+        print text
         lines = []
         cut_i = len(text) - 1
         while text:
@@ -244,25 +310,19 @@ class console:
 
     def prepare_surfaces(self, prepends, username, usercolor, text, emotes):
         # each line consists of a list of surfaces
-        new_lines = []
-        new_line = []
-        before_message = '%s%s : ' % (prepends, username)
-        text_with_rendered_emotes = self.render_emotes(text, emotes)
-        text_with_rendered_emotes.insert(0, before_message)
-        wrapped = self.wraptext(text_with_rendered_emotes, self.size[WIDTH])
-        first_line = wrapped[0]
-        new_line.extend(self.render_text(prepends, self.txt_color))
+        prepends = self.render_text(prepends, self.txt_color)
         if usercolor:
             usercolor = usercolor[1:]  # cut off the # from the start of the string
             hexcolor = (int(usercolor[:2], 16), int(usercolor[2:4], 16), int(usercolor[4:], 16))
         else:
             hexcolor = self.get_usercolor(username)
-        new_line.extend(self.render_text(username, hexcolor))
-        new_line.extend(self.render_text(' : ', self.txt_color))
-        new_line.extend(self.render_text(first_line[1:], self.txt_color))
-        new_lines.append(new_line)
-        for wrappedline in wrapped[1:]:
-            new_lines.append(self.render_text(wrappedline, self.txt_color))
+        prepends.extend(self.render_text(username, hexcolor))
+        prepends.extend(self.render_text(' : ', self.txt_color))
+        prepends.extend(self.render_emotes(text, emotes))
+        wrapped = self.wraptext(prepends, self.size[WIDTH])
+        new_lines = []
+        for wrapped_line in wrapped:
+            new_lines.append(self.render_text(wrapped_line, self.txt_color))
         return new_lines
 
     def get_usercolor(self, username):
@@ -279,19 +339,27 @@ class console:
                 x_pos += part.get_width()
             y_pos += self.font_height
 
-    def new_twitchmessage(self, result):
+    def new_activity(self):
         if self.idle_timer.is_alive():
             self.idle_timer.cancel()
+        self.enable_display()
+        self.changed = True
+        self.idle_timer = Timer(60 * 10, self.disable_display)
+        self.idle_timer.start()
+
+    def new_twitchmessage(self, result):
+        self.new_activity()
         prepends = self.make_prependstr(result['user-type'], bool(int(result['subscriber'])), result['channel'])
         new_lines = self.prepare_surfaces(prepends, result['display-name'] or result['username'], result['color'],
                                           result['message'], result['emotes'])
         self.lines.extend(new_lines)
         self.lines = self.lines[-(self.max_lines):len(self.lines)]
-        self.enable_display()
-        self.changed = True
-        self.idle_timer = Timer(60 * 10, self.disable_display)
-        self.idle_timer.start()
         return
+
+    def new_follower(self, followerinfo, name):
+        self.follower_to_display = (followerinfo['display_name'] or followerinfo['name'], name)
+        self.new_activity()
+        pass
 
     def start(self):
         self.idle_timer = Timer(10, self.disable_display)
@@ -322,6 +390,14 @@ class console:
         while self.rendering:
             time.sleep(0.01)
             if self.changed:
+                if self.follower_to_display:
+                    self.blit_quicktext("{0} Followed {1}!".format(self.follower_to_display[0],
+                                                                   self.follower_to_display[1]))
+                    self.follower_to_display = None
+                    self.changed = False
+                    self.display_follower_timer = Timer(3, self.start_rendering)
+                    self.display_follower_timer.start()
+                    break
                 self.txt_layer.fill(self.bg_color)
                 self.blit_lines(self.lines, self.txt_layer)
                 self.changed = False
