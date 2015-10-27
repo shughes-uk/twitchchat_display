@@ -85,8 +85,7 @@ class ChatScreen(object):
             y_pos += self.line_height
 
     def start(self):
-        self.idle_timer = Timer(self.standby_delay, self.disable_display)
-        self.idle_timer.start()
+        self.new_activity()
         self.start_rendering()
 
     def stop(self):
@@ -138,7 +137,6 @@ class TwitchImages(object):
 
     def __init__(self, height):
         self.emotes = {}
-        self.usercolors = {}
         self.badges = {}
         self.logos = {}
         self.img_height = height
@@ -381,18 +379,6 @@ class TwitchChatDisplay(object):
         return prepends
 
     def render_new_twitchmessage(self, message):
-        # ircMessage  = "@color=#8A2BE2;display-name=fugi;emotes=;subscriber=1;turbo=0;user-id=51837161;user-type=staff :fugi!fugi@fugi.tmi.twitch.tv PRIVMSG #amaliuz :@Noooxz The US is rich, it's just unfairly distributed"
-        # arg_regx = r"([^=;]*)=([^ ;]*)"
-        # args = dict(re.findall(arg_regx, ircMessage[1:]))
-        # regex = r'^@[^ ]* :([^!]*)![^!]*@[^.]*.tmi.twitch.tv'  # username
-        # regex += r' PRIVMSG #([^ ]*)'  # channel
-        # regex += r' :(.*)'  # message
-        # match = re.search(regex, ircMessage)
-        # args['username'] = match.group(1)
-        # args['channel'] = match.group(2)
-        # args['message'] = match.group(3)
-        # message = args
-        # each line consists of a list of surfaces
         rendered_line = self.render_prepends(message['user-type'], bool(int(message['subscriber'])), message['channel'])
         ucolor = self.get_usercolor(message['color'], message['username'])
         rendered_line.extend(self.render_text(message['display-name'] or message['username'], ucolor))
