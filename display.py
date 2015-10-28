@@ -333,7 +333,10 @@ class TwitchChatDisplay(object):
 
     def render_new_subscriber(self, channel, subscriber, months):
         sub_badge = self.twitchimages.get_badge(channel, "subscriber")
-        text = " {0} just subscribed to {1} for {2} months in a row! ".format(subscriber, channel, months)
+        if months == 0:
+            text = " {0} subscribed to {1}! ".format(subscriber, channel, months)
+        else:
+            text = " {0} subscribed to {1} for {2} months in a row! ".format(subscriber, channel, months)
         rendered = self.render_text(text, self.txt_color)
         rendered.insert(0, sub_badge)
         rendered.append(sub_badge)

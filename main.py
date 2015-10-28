@@ -73,7 +73,7 @@ if __name__ == '__main__':
     thandler.subscribe_new_follow(console.new_followers)
     tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
     tirc.subscribeChatMessage(console.new_twitchmessage)
-
+    tirc.subscribeNewSubscriber(console.new_subscriber)
     try:
         console.start()
         thandler.start()
