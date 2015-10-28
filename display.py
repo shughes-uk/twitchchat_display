@@ -2,7 +2,7 @@ import pygame
 import os
 import time
 import logging
-from threading import Timer, Thread
+from threading import Timer, Thread, Lock
 from fontTools.ttLib import TTFont
 from fontTools.unicode import Unicode
 from itertools import chain
@@ -47,18 +47,20 @@ class ChatScreen(object):
         self.txt_layer = pygame.Surface(self.size)
         self.idle_timer = Timer(self.standby_delay, self.disable_display)
         self.changed = True
+        self.lock = Lock()
 
     def set_line_height(self, lheight):
         self.line_height = lheight
         self.max_lines = (self.size[HEIGHT] / self.line_height)
 
     def new_activity(self):
-        if self.idle_timer.is_alive():
-            self.idle_timer.cancel()
-        self.enable_display()
-        self.idle_timer = Timer(self.standby_delay, self.disable_display)
-        self.idle_timer.start()
-        self.changed = True
+        with self.lock:
+            if self.idle_timer.is_alive():
+                self.idle_timer.cancel()
+            self.enable_display()
+            self.idle_timer = Timer(self.standby_delay, self.disable_display)
+            self.idle_timer.start()
+            self.changed = True
 
     def add_chatlines(self, lines):
         self.lines.extend(lines)
@@ -113,12 +115,13 @@ class ChatScreen(object):
         while self.rendering:
             time.sleep(0.1)
             if self.changed:
-                self.enable_display()
-                self.txt_layer.fill(self.bg_color)
-                self.blit_lines(self.lines, self.txt_layer)
-                self.screen.blit(self.txt_layer, self.rect)
-                pygame.display.update()
-                self.changed = False
+                with self.lock:
+                    self.enable_display()
+                    self.txt_layer.fill(self.bg_color)
+                    self.blit_lines(self.lines, self.txt_layer)
+                    self.screen.blit(self.txt_layer, self.rect)
+                    pygame.display.update()
+                    self.changed = False
 
     def enable_display(self):
         if not pygame.display.get_init():
@@ -415,8 +418,8 @@ class TwitchChatDisplay(object):
 
     def render_new_followers(self, new_followers, name):
         lines = []
-        for follower in new_followers:
-            text = "{0} followed {1}!".format(follower['display_name'] or follower['name'], name)
+        for follower_name in new_followers:
+            text = "{0} followed {1}!".format(follower_name, name)
             logger.info(text)
             rendered = self.render_text(text, self.txt_color)
             lines.append(rendered)

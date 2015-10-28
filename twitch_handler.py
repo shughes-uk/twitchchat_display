@@ -4,6 +4,7 @@ import threading
 import logging
 from time import sleep
 import datetime
+from pprint import pformat
 twitch_log.setLevel(logging.INFO)
 
 
@@ -23,7 +24,7 @@ class TwitchHandler(object):
                 self.online_status[name] = True
             else:
                 self.online_status[name] = False
-            self.follower_cache[name] = twitch.follows.by_channel(name, limit=25)['follows']
+            self.follower_cache[name] = {f['user']['display_name'] or f['user']['name'] for f in twitch.follows.by_channel(name, limit=25)['follows']}
 
     def subscribe_new_follow(self, callback):
         self.follower_callbacks.append(callback)
@@ -69,13 +70,10 @@ class TwitchHandler(object):
 
     def check_followers(self):
         for streamer_name in self.online_status:
-            latest_follows = twitch.follows.by_channel(streamer_name, limit=25)['follows']
-            if latest_follows != self.follower_cache[streamer_name]:
-                new_follows = []
-                for follow in latest_follows:
-                    if follow not in self.follower_cache[streamer_name]:
-                        new_follows.append(follow['user'])
-                self.follower_cache[streamer_name] = latest_follows
+            latest_follows = {f['user']['display_name'] or f['user']['name'] for f in twitch.follows.by_channel(streamer_name, limit=25)['follows']}
+            new_follows = latest_follows.difference(self.follower_cache[streamer_name])
+            if new_follows:
+                self.follower_cache[streamer_name].update(new_follows)
                 for callback in self.follower_callbacks:
                     callback(new_follows, streamer_name)
 
