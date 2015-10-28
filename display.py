@@ -197,7 +197,13 @@ class TwitchImages(object):
         ratio = self.img_height / float(surface.get_height())
         new_size = (int(surface.get_width() * ratio), self.img_height)
         resized = pygame.transform.scale(surface, new_size)
-        return resized.convert_alpha()
+        if not pygame.display.get_init():
+            pygame.display.init()
+            resized = resized.convert_alpha()
+            pygame.display.quit()
+            return resized
+        else:
+            return resized.convert_alpha()
 
     def load_badges(self, channel):
         if not os.path.isfile('badgecache/{0}_{1}.png'.format(channel, BADGE_TYPES[0])):
@@ -298,7 +304,8 @@ class TwitchChatDisplay(object):
             self.font_helper.load_font(fontp)
         self.chatscreen.set_line_height(self.font_helper.font_height)
         self.twitchimages = TwitchImages(self.font_helper.font_height)
-        self.chatscreen.add_chatlines([self.render_text("Loading complete. Waiting for twitch messages..", self.txt_color)])
+        self.chatscreen.add_chatlines([self.render_text("Loading complete. Waiting for twitch messages..",
+                                                        self.txt_color)])
 
     def start(self):
         self.chatscreen.start()
