@@ -298,7 +298,7 @@ class TwitchChatDisplay(object):
             self.font_helper.load_font(fontp)
         self.chatscreen.set_line_height(self.font_helper.font_height)
         self.twitchimages = TwitchImages(self.font_helper.font_height)
-        self.chatscreen.blit_quicktext("Loading complete!")
+        self.chatscreen.add_chatlines([self.render_text("Loading complete. Waiting for twitch messages..", self.txt_color)])
 
     def start(self):
         self.chatscreen.start()
