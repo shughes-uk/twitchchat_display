@@ -198,9 +198,6 @@ class TwitchImages(object):
         new_size = (int(surface.get_width() * ratio), self.img_height)
         resized = pygame.transform.scale(surface, new_size)
         if not pygame.display.get_init():
-            pygame.display.init()
-            resized = resized.convert_alpha()
-            pygame.display.quit()
             return resized
         else:
             return resized.convert_alpha()
