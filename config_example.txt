@@ -1,0 +1,6 @@
+twitch_username : "YOUR USERNAME"
+twitch_oauth : "YOUR OUATH"
+twitch_channels :
+    - "ryonday"
+    - "collectablecat"
+    - "animaggus"
