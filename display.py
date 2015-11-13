@@ -48,10 +48,11 @@ class ChatScreen(object):
         self.idle_timer = Timer(self.standby_delay, self.disable_display)
         self.changed = True
         self.lock = Lock()
+        self.viewers = {}
 
     def set_line_height(self, lheight):
         self.line_height = lheight
-        self.max_lines = (self.size[HEIGHT] / self.line_height)
+        self.max_lines = (self.size[HEIGHT] / self.line_height) - 1
 
     def new_activity(self):
         with self.lock:
@@ -78,7 +79,16 @@ class ChatScreen(object):
         pygame.display.update()
 
     def blit_lines(self, lines, surface):
-        y_pos = self.size[HEIGHT] - (self.line_height * (len(lines)))
+        y_pos = self.size[HEIGHT] - (self.line_height * (len(lines) + 1))
+        viewerstring = 'Viewers :'
+        for name in self.viewers:
+            if self.viewers[name] > 0:
+                viewerstring = viewerstring + ' {0} : {1}'.format(name, self.viewers[name])
+        if viewerstring != 'Viewers :':
+            font = pygame.font.Font("FreeSans.ttf", 72)
+            surf = font.render(viewerstring, True, (255, 255, 255))
+            y = self.size[HEIGHT] - self.line_height
+            surface.blit(surf, (0, y, 0, 0))
         for line in lines:
             x_pos = 0
             for part in line:
@@ -335,6 +345,10 @@ class TwitchChatDisplay(object):
         new_lines = self.render_new_followers(new_followers, name)
         self.chatscreen.add_chatlines(new_lines)
 
+    def new_viewers(self, viewercount, name):
+        print viewercount, name
+        self.chatscreen.viewers[name] = viewercount
+
     def render_new_subscriber(self, channel, subscriber, months):
         sub_badge = self.twitchimages.get_badge(channel, "subscriber")
         if months == 0:
@@ -417,7 +431,7 @@ class TwitchChatDisplay(object):
     def get_list_rendered_length(self, target_list):
         width = 0
         for item in target_list:
-            if isinstance(item, str):
+            if isinstance(item, str) or isinstance(item, unicode):
                 width += self.font_helper.get_text_width(item)
             else:
                 width += item.get_width()
@@ -437,7 +451,7 @@ class TwitchChatDisplay(object):
         if isinstance(text, list):
             for item in text:
                 surfaces.extend(self.render_text(item, color, aa))
-        elif isinstance(text, str):
+        elif isinstance(text, str) or isinstance(text, unicode):
             current_font = self.font_helper.required_font("a")
             i = 0
             while i < len(text):

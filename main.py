@@ -72,9 +72,11 @@ if __name__ == '__main__':
     console = TwitchChatDisplay(1920, 1080)
     thandler = TwitchHandler(config['twitch_channels'])
     thandler.subscribe_new_follow(console.new_followers)
+    thandler.subscribe_viewers_change(console.new_viewers)
     tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
     tirc.subscribeChatMessage(console.new_twitchmessage)
     tirc.subscribeNewSubscriber(console.new_subscriber)
+
     try:
         console.start()
         thandler.start()
