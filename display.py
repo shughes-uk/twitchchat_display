@@ -80,11 +80,11 @@ class ChatScreen(object):
 
     def blit_lines(self, lines, surface):
         y_pos = self.size[HEIGHT] - (self.line_height * (len(lines) + 1))
-        viewerstring = 'Viewers :'
+        viewerstring = ''
         for name in self.viewers:
             if self.viewers[name] > 0:
                 viewerstring = viewerstring + ' {0} : {1}'.format(name, self.viewers[name])
-        if viewerstring != 'Viewers :':
+        if viewerstring:
             font = pygame.font.Font("FreeSans.ttf", 72)
             surf = font.render(viewerstring, True, (255, 255, 255))
             y = self.size[HEIGHT] - self.line_height
@@ -346,7 +346,6 @@ class TwitchChatDisplay(object):
         self.chatscreen.add_chatlines(new_lines)
 
     def new_viewers(self, viewercount, name):
-        print viewercount, name
         self.chatscreen.viewers[name] = viewercount
 
     def render_new_subscriber(self, channel, subscriber, months):

@@ -3,10 +3,11 @@ import logging
 import os
 import signal
 import sys
+import time
 from yaml import load
 from twitchchat import twitch_chat
 from display import TwitchChatDisplay
-from twitch_handler import TwitchHandler
+from twitcher import twitcher
 import argparse
 logger = logging.getLogger('twitch_monitor')
 
@@ -70,7 +71,7 @@ if __name__ == '__main__':
             config['twitch_channels'].append(x['stream']['channel']['name'])
 
     console = TwitchChatDisplay(1920, 1080)
-    thandler = TwitchHandler(config['twitch_channels'])
+    thandler = twitcher(config['twitch_channels'])
     thandler.subscribe_new_follow(console.new_followers)
     thandler.subscribe_viewers_change(console.new_viewers)
     tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
@@ -80,7 +81,9 @@ if __name__ == '__main__':
     try:
         console.start()
         thandler.start()
-        tirc.run()
+        tirc.start()
+        while True:
+            time.sleep(0.2)
     finally:
         console.stop()
         thandler.stop()
