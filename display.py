@@ -311,8 +311,21 @@ class TwitchChatDisplay(object):
             self.font_helper.load_font(fontp)
         self.chatscreen.set_line_height(self.font_helper.font_height)
         self.twitchimages = TwitchImages(self.font_helper.font_height)
+        self.yt_logo = self.load_yt_icon(self.font_helper.font_height)
         self.chatscreen.add_chatlines([self.render_text("Loading complete. Waiting for twitch messages..",
                                                         self.txt_color)])
+
+    def load_yt_icon(self, height):
+        image_str = open("yt_icon.png", 'r').read()
+        image_file = io.BytesIO(image_str)
+        surface = pygame.image.load(image_file)
+        ratio = height / float(surface.get_height())
+        new_size = (int(surface.get_width() * ratio), height)
+        resized = pygame.transform.scale(surface, new_size)
+        if not pygame.display.get_init():
+            return resized
+        else:
+            return resized.convert_alpha()
 
     def start(self):
         self.chatscreen.start()
@@ -323,7 +336,7 @@ class TwitchChatDisplay(object):
     def display_message(self, text, duration):
         self.chatscreen.blit_quicktext(text, self.txt_color)
 
-    def get_usercolor(self, usercolor, username):
+    def get_usercolor(self, username, usercolor=None):
         if usercolor:
             usercolor = usercolor[1:]  # cut off the # from the start of the string
             hexcolor = (int(usercolor[:2], 16), int(usercolor[2:4], 16), int(usercolor[4:], 16))
@@ -335,7 +348,11 @@ class TwitchChatDisplay(object):
     def new_twitchmessage(self, result):
         new_lines = self.render_new_twitchmessage(result)
         self.chatscreen.add_chatlines(new_lines)
-        return
+
+    def new_ytmessage(self, new_msg_objs, chat_id):
+        for msgobj in new_msg_objs:
+            new_lines = self.render_new_ytmessage(msgobj)
+            self.chatscreen.add_chatlines(new_lines)
 
     def new_subscriber(self, channel, subscriber, months):
         new_line = self.render_new_subscriber(channel, subscriber, months)
@@ -401,9 +418,21 @@ class TwitchChatDisplay(object):
             prepends.append(self.twitchimages.get_badge(channel, 'subscriber'))
         return prepends
 
+    def render_new_ytmessage(self, message):
+        rendered_line = [self.yt_logo]
+        ucolor = self.get_usercolor(message.authorChannelName)
+        rendered_line.extend(self.render_text(message.authorChannelName, ucolor))
+        rendered_line.extend(self.render_text(' : ', self.txt_color))
+        rendered_line.extend(self.render_text(message.messageText, self.txt_color))
+        wrapped_lines = self.wraptext(rendered_line, self.size[WIDTH])
+        new_lines = []
+        for wrapped_line in wrapped_lines:
+            new_lines.append(self.render_text(wrapped_line, self.txt_color))
+        return new_lines
+
     def render_new_twitchmessage(self, message):
         rendered_line = self.render_prepends(message['user-type'], bool(int(message['subscriber'])), message['channel'])
-        ucolor = self.get_usercolor(message['color'], message['username'])
+        ucolor = self.get_usercolor(message['username'], message['color'])
         rendered_line.extend(self.render_text(message['display-name'] or message['username'], ucolor))
         rendered_line.extend(self.render_text(' : ', self.txt_color))
         rendered_line.extend(self.render_emotes(message['message'], message['emotes']))

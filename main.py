@@ -8,6 +8,7 @@ from yaml import load
 from twitchchat import twitch_chat
 from display import TwitchChatDisplay
 from twitcher import twitcher
+from youtubechat import youtube_live_chat, get_liveChatId_for_stream_now
 import argparse
 logger = logging.getLogger('twitch_monitor')
 
@@ -77,13 +78,24 @@ if __name__ == '__main__':
     tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
     tirc.subscribeChatMessage(console.new_twitchmessage)
     tirc.subscribeNewSubscriber(console.new_subscriber)
+    ytchat = None
+    if 'youtube_enabled' in config:
+        if config['youtube_enabled']:
+            chatId = get_liveChatId_for_stream_now('oauth_creds')
+            ytchat = youtube_live_chat('oauth_creds', [chatId])
+            ytchat.subscribeChatMessage(console.new_ytmessage)
 
     try:
         console.start()
         thandler.start()
         tirc.start()
+        if ytchat:
+            ytchat.start()
+
         while True:
             time.sleep(0.2)
     finally:
         console.stop()
         thandler.stop()
+        if ytchat:
+            ytchat.stop()
