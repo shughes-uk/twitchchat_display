@@ -420,10 +420,10 @@ class TwitchChatDisplay(object):
 
     def render_new_ytmessage(self, message):
         rendered_line = [self.yt_logo]
-        ucolor = self.get_usercolor(message.authorChannelName)
-        rendered_line.extend(self.render_text(message.authorChannelName, ucolor))
+        ucolor = self.get_usercolor(message.author_channel_name)
+        rendered_line.extend(self.render_text(message.author_channel_name, ucolor))
         rendered_line.extend(self.render_text(' : ', self.txt_color))
-        rendered_line.extend(self.render_text(message.messageText, self.txt_color))
+        rendered_line.extend(self.render_text(message.message_text, self.txt_color))
         wrapped_lines = self.wraptext(rendered_line, self.size[WIDTH])
         new_lines = []
         for wrapped_line in wrapped_lines:
