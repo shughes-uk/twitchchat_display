@@ -10,6 +10,7 @@ from display import TwitchChatDisplay
 from twitcher import twitcher
 from youtubechat import YoutubeLiveChat, get_live_chat_id_for_stream_now
 import argparse
+import pygame
 logger = logging.getLogger('twitch_monitor')
 
 
@@ -70,32 +71,35 @@ if __name__ == '__main__':
         featured_streams = twitch.streams.featured(limit=5)['featured']
         for x in featured_streams:
             config['twitch_channels'].append(x['stream']['channel']['name'])
-
-    console = TwitchChatDisplay(1920, 1080)
-    thandler = twitcher(config['twitch_channels'])
-    thandler.subscribe_new_follow(console.new_followers)
-    thandler.subscribe_viewers_change(console.new_viewers)
-    tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
-    tirc.subscribeChatMessage(console.new_twitchmessage)
-    tirc.subscribeNewSubscriber(console.new_subscriber)
-    ytchat = None
-    if 'youtube_enabled' in config:
-        if config['youtube_enabled']:
-            chatId = get_live_chat_id_for_stream_now('oauth_creds')
-            ytchat = YoutubeLiveChat('oauth_creds', [chatId])
-            ytchat.subscribe_chat_message(console.new_ytmessage)
-
     try:
-        console.start()
-        thandler.start()
-        tirc.start()
-        if ytchat:
-            ytchat.start()
+        console = TwitchChatDisplay(1920, 1080)
+        thandler = twitcher(config['twitch_channels'])
+        thandler.subscribe_new_follow(console.new_followers)
+        thandler.subscribe_viewers_change(console.new_viewers)
+        tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
+        tirc.subscribeChatMessage(console.new_twitchmessage)
+        tirc.subscribeNewSubscriber(console.new_subscriber)
+        ytchat = None
+        if 'youtube_enabled' in config:
+            if config['youtube_enabled']:
+                chatId = get_live_chat_id_for_stream_now('oauth_creds')
+                ytchat = YoutubeLiveChat('oauth_creds', [chatId])
+                ytchat.subscribe_chat_message(console.new_ytmessage)
 
-        while True:
-            time.sleep(0.2)
+        try:
+            console.start()
+            thandler.start()
+            tirc.start()
+            if ytchat:
+                ytchat.start()
+            while True:
+                pygame.event.pump()
+        finally:
+            console.stop()
+            thandler.stop()
+            if ytchat:
+                ytchat.stop()
     finally:
-        console.stop()
-        thandler.stop()
-        if ytchat:
-            ytchat.stop()
+        pygame.event.pump()
+        pygame.quit()
+        print 'finally'

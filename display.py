@@ -8,11 +8,12 @@ from fontTools.unicode import Unicode
 from itertools import chain
 import json
 import urllib
-import io
 import random
 import re
 import webcolors
-FONT_PATHS = ["FreeSans.ttf", "Cyberbit.ttf", "unifont.ttf"]
+import ssl
+
+FONT_PATHS = ["FreeSans.ttf", "Cyberbit.ttf"]  # , "unifont.ttf"]
 
 BADGE_TYPES = ['global_mod', 'admin', 'broadcaster', 'mod', 'staff', 'turbo', 'subscriber']
 logger = logging.getLogger("display")
@@ -60,6 +61,7 @@ class ChatScreen(object):
                 self.idle_timer.cancel()
             self.enable_display()
             self.idle_timer = Timer(self.standby_delay, self.disable_display)
+            self.idle_timer.daemon = True
             self.idle_timer.start()
             self.changed = True
 
@@ -146,6 +148,40 @@ class ChatScreen(object):
             pygame.display.quit()
 
 
+class YTProfileImages(object):
+
+    def __init__(self, height):
+        self.profile_images = {}
+        self.img_height = height
+
+    def get_profile_image(self, url, channelId):
+        if channelId not in self.profile_images:
+            self.load_profile_image(url, channelId)
+        return self.profile_images[channelId]
+
+    def load_profile_image(self, url, channelId):
+        if not os.path.isfile('profile_images/{0}.jpg'.format(channelId)):
+            if not os.path.isdir('profile_images'):
+                os.mkdir('profile_images')
+            self.download_profile_image(url, channelId)
+        self.profile_images[channelId] = {}
+        self.profile_images[channelId] = self.load_and_resize('profile_images/{0}.jpg'.format(channelId))
+
+    def download_profile_image(self, url, channelId):
+        context = ssl._create_unverified_context()
+        urllib.urlretrieve(url, 'profile_images/{0}.jpg'.format(channelId), context=context)
+
+    def load_and_resize(self, filename):
+        surface = pygame.image.load(filename)
+        ratio = self.img_height / float(surface.get_height())
+        new_size = (int(surface.get_width() * ratio), self.img_height)
+        resized = pygame.transform.scale(surface, new_size)
+        if not pygame.display.get_init():
+            return resized
+        else:
+            return resized.convert_alpha()
+
+
 class TwitchImages(object):
 
     def __init__(self, height):
@@ -201,9 +237,7 @@ class TwitchImages(object):
         img_file.close()
 
     def load_and_resize(self, filename):
-        image_str = open(filename, 'r').read()
-        image_file = io.BytesIO(image_str)
-        surface = pygame.image.load(image_file)
+        surface = pygame.image.load(filename)
         ratio = self.img_height / float(surface.get_height())
         new_size = (int(surface.get_width() * ratio), self.img_height)
         resized = pygame.transform.scale(surface, new_size)
@@ -312,13 +346,12 @@ class TwitchChatDisplay(object):
         self.chatscreen.set_line_height(self.font_helper.font_height)
         self.twitchimages = TwitchImages(self.font_helper.font_height)
         self.yt_logo = self.load_yt_icon(self.font_helper.font_height)
+        self.youtube_profile_images = YTProfileImages(self.font_helper.font_height)
         self.chatscreen.add_chatlines([self.render_text("Loading complete. Waiting for twitch messages..",
                                                         self.txt_color)])
 
     def load_yt_icon(self, height):
-        image_str = open("yt_icon.png", 'r').read()
-        image_file = io.BytesIO(image_str)
-        surface = pygame.image.load(image_file)
+        surface = pygame.image.load("yt_icon.png")
         ratio = height / float(surface.get_height())
         new_size = (int(surface.get_width() * ratio), height)
         resized = pygame.transform.scale(surface, new_size)
@@ -418,10 +451,14 @@ class TwitchChatDisplay(object):
             prepends.append(self.twitchimages.get_badge(channel, 'subscriber'))
         return prepends
 
+    def render_yt_profile(self, author):
+        return self.youtube_profile_images.get_profile_image(author.profile_image_url, author.channel_id)
+
     def render_new_ytmessage(self, message):
         rendered_line = [self.yt_logo]
-        ucolor = self.get_usercolor(message.author_channel_name)
-        rendered_line.extend(self.render_text(message.author_channel_name, ucolor))
+        ucolor = self.get_usercolor(message.author.display_name)
+        rendered_line.append(self.render_yt_profile(message.author))
+        rendered_line.extend(self.render_text(message.author.display_name, ucolor))
         rendered_line.extend(self.render_text(' : ', self.txt_color))
         rendered_line.extend(self.render_text(message.message_text, self.txt_color))
         wrapped_lines = self.wraptext(rendered_line, self.size[WIDTH])
