@@ -13,7 +13,7 @@ import re
 import webcolors
 import ssl
 
-FONT_PATHS = ["FreeSans.ttf", "Cyberbit.ttf"]  # , "unifont.ttf"]
+FONT_PATHS = ["FreeSans.ttf", "Cyberbit.ttf", "unifont.ttf"]
 
 BADGE_TYPES = ['global_mod', 'admin', 'broadcaster', 'mod', 'staff', 'turbo', 'subscriber']
 logger = logging.getLogger("display")
