@@ -460,7 +460,7 @@ class TwitchChatDisplay(object):
         rendered_line.append(self.render_yt_profile(message.author))
         rendered_line.extend(self.render_text(message.author.display_name, ucolor))
         rendered_line.extend(self.render_text(' : ', self.txt_color))
-        rendered_line.extend(self.render_text(message.message_text, self.txt_color))
+        rendered_line.extend(list(message.message_text))
         wrapped_lines = self.wraptext(rendered_line, self.size[WIDTH])
         new_lines = []
         for wrapped_line in wrapped_lines:
