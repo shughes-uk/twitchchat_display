@@ -72,7 +72,7 @@ if __name__ == '__main__':
         for x in featured_streams:
             config['twitch_channels'].append(x['stream']['channel']['name'])
     try:
-        console = TwitchChatDisplay(1920, 1080)
+        console = TwitchChatDisplay(config['screen_width'],config['screen_height'])
         thandler = twitcher(config['twitch_channels'])
         thandler.subscribe_new_follow(console.new_followers)
         thandler.subscribe_viewers_change(console.new_viewers)
@@ -93,6 +93,7 @@ if __name__ == '__main__':
             if ytchat:
                 ytchat.start()
             while True:
+		time.sleep(0.1)
                 pygame.event.pump()
         finally:
             console.stop()
@@ -100,6 +101,4 @@ if __name__ == '__main__':
             if ytchat:
                 ytchat.stop()
     finally:
-        pygame.event.pump()
         pygame.quit()
-        print 'finally'
