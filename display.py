@@ -391,7 +391,7 @@ class TwitchChatDisplay(object):
         new_line = self.render_new_subscriber(channel, subscriber, months)
         self.chatscreen.add_chatlines([new_line])
 
-    def new_followers(self, new_followers, name):
+    def new_followers(self, new_followers, name, total):
         new_lines = self.render_new_followers(new_followers, name)
         self.chatscreen.add_chatlines(new_lines)
 
