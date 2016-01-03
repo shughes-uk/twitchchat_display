@@ -24,6 +24,10 @@ TWITCH_COLORS = ['Blue', 'Coral', 'DodgerBlue', 'SpringGreen', 'YellowGreen', 'G
                  'HotPink', 'CadetBlue', 'SeaGreen', 'Chocolate', 'BlueViolet', 'Firebrick']
 
 
+def strip_unsupported_chars(msg):
+    return ''.join(c for c in msg if ord(c) <= 65535)
+
+
 def turn_screen_off():
     os.system('/opt/vc/bin/tvservice -o')
 
@@ -379,11 +383,13 @@ class TwitchChatDisplay(object):
         return self.usercolors[username]
 
     def new_twitchmessage(self, result):
+        result['message'] = strip_unsupported_chars(result['message'])
         new_lines = self.render_new_twitchmessage(result)
         self.chatscreen.add_chatlines(new_lines)
 
     def new_ytmessage(self, new_msg_objs, chat_id):
         for msgobj in new_msg_objs:
+            msgobj.message_text = strip_unsupported_chars(msgobj.message_text)
             new_lines = self.render_new_ytmessage(msgobj)
             self.chatscreen.add_chatlines(new_lines)
 
