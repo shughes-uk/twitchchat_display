@@ -9,7 +9,7 @@ import time
 from yaml import load
 from twitchchat import twitch_chat
 from display import TwitchChatDisplay
-from twitcher import twitcher
+from twitchevents import twitchevents
 from youtubechat import YoutubeLiveChat, get_live_chat_id_for_stream_now
 import argparse
 import pygame
@@ -76,7 +76,7 @@ if __name__ == '__main__':
             config['twitch_channels'].append(x['stream']['channel']['name'])
     try:
         console = TwitchChatDisplay(config['screen_width'], config['screen_height'])
-        thandler = twitcher(config['twitch_channels'])
+        thandler = twitchevents(config['twitch_channels'])
         thandler.subscribe_new_follow(console.new_followers)
         thandler.subscribe_viewers_change(console.new_viewers)
         tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
