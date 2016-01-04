@@ -13,6 +13,7 @@ import re
 import webcolors
 import ssl
 import unicodedata
+from PIL import Image
 FONT_PATHS = ["FreeSans.ttf", "Cyberbit.ttf", "unifont.ttf"]
 
 BADGE_TYPES = ['global_mod', 'admin', 'broadcaster', 'mod', 'staff', 'turbo', 'subscriber']
@@ -216,10 +217,9 @@ class TwitchImages(object):
         for btype in BADGE_TYPES:
             if data[btype]:
                 response = urllib.urlopen(data[btype]['image'])
-                image_str = response.read()
-                img_file = open('badgecache/{0}_{1}.png'.format(channel, btype), 'w')
-                img_file.write(image_str)
-                img_file.close()
+                im = Image.open(response)
+                im.save('badgecache/{0}_{1}.png'.format(channel, btype))
+
 
     def download_emote(self, id):
         response = None
@@ -232,19 +232,15 @@ class TwitchImages(object):
                     response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/1.0'.format(id))
             except IOError:
                 logger.warn("Error downloading twitch emote, trying again")
-        image_str = response.read()
-        img_file = open('emotecache/{0}.png'.format(id), 'w')
-        img_file.write(image_str)
-        img_file.close()
+        im = Image.open(response)
+        im.save('emotecache/{0}.png'.format(id))
 
     def download_logo(self, channel):
         response = urllib.urlopen('https://api.twitch.tv/kraken/users/{0}'.format(channel))
         data = json.load(response)
         response = urllib.urlopen(data['logo'])
-        image_str = response.read()
-        img_file = open('logocache/{0}.png'.format(channel), 'w')
-        img_file.write(image_str)
-        img_file.close()
+        im = Image.open(response)
+        im.save('logocache/{0}.png'.format(channel))
 
     def load_and_resize(self, filename):
         surface = pygame.image.load(filename)
@@ -499,8 +495,12 @@ class TwitchChatDisplay(object):
             if width > maxwidth:
                 cut_i -= 1
             else:
-                lines.append(text[:cut_i + 1])
-                text = text[cut_i + 1:]
+                if text[:cut_i+1]:
+                    lines.append(text[:cut_i + 1])
+                    text = text[cut_i + 1:]
+                else:
+                    lines.append(text[:cut_i+2])
+                    text = text[cut_i+2:]
                 if text:
                     cut_i = len(text) - 1
         return lines
