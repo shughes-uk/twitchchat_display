@@ -91,7 +91,7 @@ class ChatScreen(object):
             if self.viewers[name] > 0:
                 viewerstring = viewerstring + ' {0} : {1}'.format(name, self.viewers[name])
         if viewerstring:
-            font = pygame.font.Font("FreeSans.ttf", 72)
+            font = pygame.font.Font("FreeSans.ttf", 48)
             surf = font.render(viewerstring, True, (255, 255, 255))
             y = self.size[HEIGHT] - self.line_height
             surface.blit(surf, (0, y, 0, 0))
@@ -222,9 +222,9 @@ class TwitchImages(object):
 
     def download_emote(self, id):
         response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/3.0'.format(id))
-        if response.getcode() == 404:
+        if response.getcode() != 200:
             response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/2.0'.format(id))
-        if response.getcode() == 404:
+        if response.getcode() != 200:
             response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/1.0'.format(id))
         image_str = response.read()
         img_file = open('emotecache/{0}.png'.format(id), 'w')
@@ -280,7 +280,7 @@ class FontHelper(object):
 
     def __init__(self):
         logger.info("Fonthelper init")
-        self.font_size = 62
+        self.font_size = 48
         self.font_height = 0
         self.fonts = []
 
