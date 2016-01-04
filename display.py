@@ -12,7 +12,7 @@ import random
 import re
 import webcolors
 import ssl
-
+import unicodedata
 FONT_PATHS = ["FreeSans.ttf", "Cyberbit.ttf", "unifont.ttf"]
 
 BADGE_TYPES = ['global_mod', 'admin', 'broadcaster', 'mod', 'staff', 'turbo', 'subscriber']
@@ -25,7 +25,7 @@ TWITCH_COLORS = ['Blue', 'Coral', 'DodgerBlue', 'SpringGreen', 'YellowGreen', 'G
 
 
 def strip_unsupported_chars(msg):
-    return msg.encode('ascii','ignore')
+    return unicodedata.normalize('NFKD', msg).encode('ascii', 'ignore')
 
 
 def turn_screen_off():
