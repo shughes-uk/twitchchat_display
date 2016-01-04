@@ -25,7 +25,7 @@ TWITCH_COLORS = ['Blue', 'Coral', 'DodgerBlue', 'SpringGreen', 'YellowGreen', 'G
 
 
 def strip_unsupported_chars(msg):
-    return ''.join(c for c in msg if ord(c) <= 65535)
+    return msg.encode('ascii','ignore')
 
 
 def turn_screen_off():
@@ -466,7 +466,7 @@ class TwitchChatDisplay(object):
         rendered_line.append(self.render_yt_profile(message.author))
         rendered_line.extend(self.render_text(message.author.display_name, ucolor))
         rendered_line.extend(self.render_text(' : ', self.txt_color))
-        rendered_line.extend(list(message.message_text.encode('ascii','ignore')))
+        rendered_line.extend(list(message.message_text))
         wrapped_lines = self.wraptext(rendered_line, self.size[WIDTH])
         new_lines = []
         for wrapped_line in wrapped_lines:
