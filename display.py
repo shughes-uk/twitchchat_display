@@ -222,11 +222,16 @@ class TwitchImages(object):
                 img_file.close()
 
     def download_emote(self, id):
-        response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/3.0'.format(id))
-        if response.getcode() != 200:
-            response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/2.0'.format(id))
-        if response.getcode() != 200:
-            response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/1.0'.format(id))
+        response = None
+        while not response:
+            try:
+                response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/3.0'.format(id))
+                if response.getcode() != 200:
+                    response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/2.0'.format(id))
+                if response.getcode() != 200:
+                    response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/1.0'.format(id))
+            except IOError:
+                logger.warn("Error downloading twitch emote, trying again")
         image_str = response.read()
         img_file = open('emotecache/{0}.png'.format(id), 'w')
         img_file.write(image_str)
