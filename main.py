@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import logging
 import os
 import signal
@@ -62,6 +64,7 @@ if __name__ == '__main__':
                         const=logging.DEBUG,
                         default=logging.INFO,)
     args = parser.parse_args()
+
     logging.basicConfig(level=args.loglevel,
                         format='%(asctime)s.%(msecs)d %(levelname)s %(name)s : %(message)s',
                         datefmt='%H:%M:%S')
