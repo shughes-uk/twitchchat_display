@@ -1,6 +1,8 @@
-twitch_username : "YOUR USERNAME"
-twitch_oauth : "YOUR OUATH"
+twitch_username : "your account name here"
+twitch_oauth : "oauth:twitch oauth"
 twitch_channels :
-    - "ryonday"
-    - "collectablecat"
-    - "animaggus"
+- "animaggus"
+- "collectablecat"
+youtube_enabled : True
+screen_width : 1280
+screen_height : 720
