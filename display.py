@@ -70,8 +70,9 @@ class ChatScreen(object):
             self.changed = True
 
     def add_chatlines(self, lines):
-        self.lines.extend(lines)
-        self.lines = self.lines[-(self.max_lines):len(self.lines)]
+        with self.lock:
+            self.lines.extend(lines)
+            self.lines = self.lines[-(self.max_lines):len(self.lines)]
         self.new_activity()
 
     def blit_quicktext(self, text, color=(255, 255, 255)):
