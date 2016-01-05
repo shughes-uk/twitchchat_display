@@ -14,6 +14,7 @@ from youtubechat import YoutubeLiveChat, get_live_chat_id_for_stream_now
 import argparse
 import pygame
 logger = logging.getLogger('twitch_monitor')
+PY3 = sys.version_info[0] == 3
 
 
 def signal_term_handler(signal, frame):
@@ -37,12 +38,13 @@ def get_config():
                     msg = '{} not present in config.txt, put it there! check config_example.txt!'.format(setting)
                     logger.critical(msg)
                     sys.exit()
-                # don't allow unicode!
-                if isinstance(config[setting], unicode):
-                    config[setting] = str(remove_nonascii(config[setting]))
+                if not PY3:
+                    # don't allow unicode!
+                    if isinstance(config[setting], unicode):
+                        config[setting] = str(remove_nonascii(config[setting]))
         except SystemExit:
             sys.exit()
-        except Exception, e:
+        except Exception as e:
             logger.info(e)
             logger.critical('Problem loading configuration file, try deleting config.txt and starting again')
     else:

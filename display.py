@@ -1,4 +1,3 @@
-import pygame
 import os
 import time
 import logging
@@ -7,14 +6,26 @@ from fontTools.ttLib import TTFont
 from fontTools.unicode import Unicode
 from itertools import chain
 import json
-import urllib
 import random
 import re
 import webcolors
 import ssl
+import sys
 import unicodedata
 from PIL import Image
-FONT_PATHS = ["FreeSans.ttf", "Cyberbit.ttf", "unifont.ttf"]
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    string_types = str,
+    from urllib.request import urlopen,urlretrieve
+    import pygame.ftfont
+    pygame.font = pygame.ftfont
+else:
+    string_types = basestring,
+    from urllib import urlopen,urlretrieve
+    import pygame.font
+
+FONT_PATHS = ["FreeSans.ttf", "OpenSansEmoji.ttf","Cyberbit.ttf", "unifont.ttf" ]
 
 BADGE_TYPES = ['global_mod', 'admin', 'broadcaster', 'mod', 'staff', 'turbo', 'subscriber']
 logger = logging.getLogger("display")
@@ -26,7 +37,7 @@ TWITCH_COLORS = ['Blue', 'Coral', 'DodgerBlue', 'SpringGreen', 'YellowGreen', 'G
 
 
 def strip_unsupported_chars(msg):
-    return unicodedata.normalize('NFKD', msg).encode('ascii', 'ignore')
+    return unicodedata.normalize('NFKD', msg).encode('ascii', 'ignore').decode()
 
 
 def turn_screen_off():
@@ -58,7 +69,7 @@ class ChatScreen(object):
 
     def set_line_height(self, lheight):
         self.line_height = lheight
-        self.max_lines = (self.size[HEIGHT] / self.line_height) - 1
+        self.max_lines = int((self.size[HEIGHT] / self.line_height) - 1)
 
     def new_activity(self):
         with self.lock:
@@ -175,7 +186,7 @@ class YTProfileImages(object):
 
     def download_profile_image(self, url, channelId):
         context = ssl._create_unverified_context()
-        urllib.urlretrieve(url, 'profile_images/{0}.jpg'.format(channelId), context=context)
+        urlretrieve(url, 'profile_images/{0}.jpg'.format(channelId), context=context)
 
     def load_and_resize(self, filename):
         surface = pygame.image.load(filename)
@@ -212,11 +223,11 @@ class TwitchImages(object):
         return self.logos[channel]
 
     def download_badges(self, channel):
-        response = urllib.urlopen('https://api.twitch.tv/kraken/chat/{0}/badges'.format(channel))
-        data = json.load(response)
+        response = urlopen('https://api.twitch.tv/kraken/chat/{0}/badges'.format(channel)).read().decode("UTF-8")
+        data = json.loads(response)
         for btype in BADGE_TYPES:
             if data[btype]:
-                response = urllib.urlopen(data[btype]['image'])
+                response = urlopen(data[btype]['image'])
                 im = Image.open(response)
                 im.save('badgecache/{0}_{1}.png'.format(channel, btype))
 
@@ -225,20 +236,20 @@ class TwitchImages(object):
         response = None
         while not response:
             try:
-                response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/3.0'.format(id))
+                response = urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/3.0'.format(id))
                 if response.getcode() != 200:
-                    response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/2.0'.format(id))
+                    response = urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/2.0'.format(id))
                 if response.getcode() != 200:
-                    response = urllib.urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/1.0'.format(id))
+                    response = urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/1.0'.format(id))
             except IOError:
                 logger.warn("Error downloading twitch emote, trying again")
         im = Image.open(response)
         im.save('emotecache/{0}.png'.format(id))
 
     def download_logo(self, channel):
-        response = urllib.urlopen('https://api.twitch.tv/kraken/users/{0}'.format(channel))
-        data = json.load(response)
-        response = urllib.urlopen(data['logo'])
+        response = urlopen('https://api.twitch.tv/kraken/users/{0}'.format(channel)).read().decode("UTF-8")
+        data = json.loads(response)
+        response = urlopen(data['logo'])
         im = Image.open(response)
         im.save('logocache/{0}.png'.format(channel))
 
@@ -385,13 +396,15 @@ class TwitchChatDisplay(object):
         return self.usercolors[username]
 
     def new_twitchmessage(self, result):
-        result['message'] = strip_unsupported_chars(result['message'])
+        if not PY3:
+            result['message'] = strip_unsupported_chars(result['message'])
         new_lines = self.render_new_twitchmessage(result)
         self.chatscreen.add_chatlines(new_lines)
 
     def new_ytmessage(self, new_msg_objs, chat_id):
         for msgobj in new_msg_objs:
-            msgobj.message_text = strip_unsupported_chars(msgobj.message_text)
+            if not PY3:
+                msgobj.message_text = strip_unsupported_chars(msgobj.message_text)
             new_lines = self.render_new_ytmessage(msgobj)
             self.chatscreen.add_chatlines(new_lines)
 
@@ -508,7 +521,7 @@ class TwitchChatDisplay(object):
     def get_list_rendered_length(self, target_list):
         width = 0
         for item in target_list:
-            if isinstance(item, str) or isinstance(item, unicode):
+            if isinstance(item, string_types):
                 width += self.font_helper.get_text_width(item)
             else:
                 width += item.get_width()
@@ -528,7 +541,7 @@ class TwitchChatDisplay(object):
         if isinstance(text, list):
             for item in text:
                 surfaces.extend(self.render_text(item, color, aa))
-        elif isinstance(text, str) or isinstance(text, unicode):
+        elif isinstance(text, string_types):
             current_font = self.font_helper.required_font("a")
             i = 0
             while i < len(text):
@@ -542,8 +555,12 @@ class TwitchChatDisplay(object):
                     current_font = rq_font
                 else:
                     i += 1
-            part = current_font[0].render(text, aa, color)
-            surfaces.append(part)
+            try:
+                part = current_font[0].render(text, aa, color)
+                surfaces.append(part)
+            except UnicodeError as e:
+                if str(e) == "A Unicode character above '\uFFFF' was found; not supported":
+                    pass
         else:
             return [text]
         return surfaces
