@@ -17,15 +17,15 @@ PY3 = sys.version_info[0] == 3
 
 if PY3:
     string_types = str,
-    from urllib.request import urlopen,urlretrieve
+    from urllib.request import urlopen, urlretrieve
     import pygame.ftfont
     pygame.font = pygame.ftfont
 else:
     string_types = basestring,
-    from urllib import urlopen,urlretrieve
+    from urllib import urlopen, urlretrieve
     import pygame.font
 
-FONT_PATHS = ["FreeSans.ttf", "OpenSansEmoji.ttf","Cyberbit.ttf", "unifont.ttf" ]
+FONT_PATHS = ["FreeSans.ttf", "OpenSansEmoji.ttf", "Cyberbit.ttf", "unifont.ttf"]
 
 BADGE_TYPES = ['global_mod', 'admin', 'broadcaster', 'mod', 'staff', 'turbo', 'subscriber']
 logger = logging.getLogger("display")
@@ -231,7 +231,6 @@ class TwitchImages(object):
                 im = Image.open(response)
                 im.save('badgecache/{0}_{1}.png'.format(channel, btype))
 
-
     def download_emote(self, id):
         response = None
         while not response:
@@ -353,6 +352,7 @@ class TwitchChatDisplay(object):
         self.bg_color = [0x32, 0x32, 0x3E]
         self.txt_color = [0xFF, 0xFF, 0xFF]
         self.usercolors = {}
+        self.ignore_list = []
 
         self.size = (screen_width, screen_height)
         self.chatscreen = ChatScreen(screen_width, screen_height, self.bg_color)
@@ -377,6 +377,9 @@ class TwitchChatDisplay(object):
         else:
             return resized.convert_alpha()
 
+    def ignore_user(self, username):
+        self.ignore_list.append(username)
+
     def start(self):
         self.chatscreen.start()
 
@@ -396,17 +399,19 @@ class TwitchChatDisplay(object):
         return self.usercolors[username]
 
     def new_twitchmessage(self, result):
-        if not PY3:
-            result['message'] = strip_unsupported_chars(result['message'])
-        new_lines = self.render_new_twitchmessage(result)
-        self.chatscreen.add_chatlines(new_lines)
+        if result['username'] not in self.ignore_list:
+            if not PY3:
+                result['message'] = strip_unsupported_chars(result['message'])
+            new_lines = self.render_new_twitchmessage(result)
+            self.chatscreen.add_chatlines(new_lines)
 
     def new_ytmessage(self, new_msg_objs, chat_id):
         for msgobj in new_msg_objs:
-            if not PY3:
-                msgobj.message_text = strip_unsupported_chars(msgobj.message_text)
-            new_lines = self.render_new_ytmessage(msgobj)
-            self.chatscreen.add_chatlines(new_lines)
+            if msgobj.author.display_name not in self.ignore_list:
+                if not PY3:
+                    msgobj.message_text = strip_unsupported_chars(msgobj.message_text)
+                new_lines = self.render_new_ytmessage(msgobj)
+                self.chatscreen.add_chatlines(new_lines)
 
     def new_subscriber(self, channel, subscriber, months):
         new_line = self.render_new_subscriber(channel, subscriber, months)
@@ -508,12 +513,12 @@ class TwitchChatDisplay(object):
             if width > maxwidth:
                 cut_i -= 1
             else:
-                if text[:cut_i+1]:
+                if text[:cut_i + 1]:
                     lines.append(text[:cut_i + 1])
                     text = text[cut_i + 1:]
                 else:
-                    lines.append(text[:cut_i+2])
-                    text = text[cut_i+2:]
+                    lines.append(text[:cut_i + 2])
+                    text = text[cut_i + 2:]
                 if text:
                     cut_i = len(text) - 1
         return lines

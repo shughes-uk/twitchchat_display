@@ -90,7 +90,9 @@ if __name__ == '__main__':
                 chatId = get_live_chat_id_for_stream_now('oauth_creds')
                 ytchat = YoutubeLiveChat('oauth_creds', [chatId])
                 ytchat.subscribe_chat_message(console.new_ytmessage)
-
+        if 'ignored_users' in config:
+            for user in config['ignored_users']:
+                console.ignore_user(user)
         try:
             console.start()
             thandler.start()
