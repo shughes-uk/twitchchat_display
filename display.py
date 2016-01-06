@@ -186,7 +186,9 @@ class YTProfileImages(object):
 
     def download_profile_image(self, url, channelId):
         context = ssl._create_unverified_context()
-        urlretrieve(url, 'profile_images/{0}.jpg'.format(channelId), context=context)
+        response = urlopen(url, context=context)
+        im = Image.open(response)
+        im.save('profile_images/{0}.jpg'.format(channelId))
 
     def load_and_resize(self, filename):
         surface = pygame.image.load(filename)
