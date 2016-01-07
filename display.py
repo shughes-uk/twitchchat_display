@@ -379,6 +379,8 @@ class TwitchChatDisplay(object):
 
     def start(self):
         self.chatscreen.start()
+        msg = [self.render_text("Loading complete. Waiting for messages..", self.txt_color)]
+        self.chatscreen.add_chatlines(msg)
 
     def stop(self):
         self.chatscreen.stop()
