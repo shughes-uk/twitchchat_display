@@ -19,7 +19,7 @@ You can try and grab depedencies using try_get_dependencies.py, getting pygame i
 Dependencies
 ------------
 
- * python-twitch(https://github.com/ingwinlu/python-twitch)
+ * [python-twitch](https://github.com/ingwinlu/python-twitch)
  * [python-youtubechat](https://github.com/shughes-uk/python-youtubechat)
  * [python-twitchevents](https://github.com/shughes-uk/python-twitchevents)
  * [python-twitchchat](https://github.com/shughes-uk/python-twitchchat)
