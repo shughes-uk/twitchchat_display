@@ -76,6 +76,12 @@ if __name__ == '__main__':
         featured_streams = twitch.streams.featured(limit=5)['featured']
         for x in featured_streams:
             config['twitch_channels'].append(x['stream']['channel']['name'])
+        import shutil
+        shutil.rmtree('logocache', ignore_errors=True)
+        shutil.rmtree('badgecache', ignore_errors=True)
+        shutil.rmtree('emotecache', ignore_errors=True)
+        shutil.rmtree('profile_images', ignore_errors=True)
+
     try:
         console = TwitchChatDisplay(config['screen_width'], config['screen_height'])
         thandler = twitchevents(config['twitch_channels'])

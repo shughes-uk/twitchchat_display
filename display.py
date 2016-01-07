@@ -15,12 +15,12 @@ PY3 = sys.version_info[0] == 3
 
 if PY3:
     string_types = str,
-    from urllib.request import urlopen, urlretrieve
+    from urllib.request import urlopen
     import pygame.ftfont
     pygame.font = pygame.ftfont
 else:
     string_types = basestring,
-    from urllib import urlopen, urlretrieve
+    from urllib import urlopen
     import pygame.font
 
 FONT_PATHS = ["FreeSans.ttf", "OpenSansEmoji.ttf", "Cyberbit.ttf", "unifont.ttf"]
