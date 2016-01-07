@@ -84,22 +84,27 @@ if __name__ == '__main__':
 
     try:
         console = TwitchChatDisplay(config['screen_width'], config['screen_height'])
+        console.display_message("Loading twitch_api manager")
         thandler = twitchevents(config['twitch_channels'])
         thandler.subscribe_new_follow(console.new_followers)
         thandler.subscribe_viewers_change(console.new_viewers)
+        console.display_message("Loading twitch_message handler")
         tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
         tirc.subscribeChatMessage(console.new_twitchmessage)
         tirc.subscribeNewSubscriber(console.new_subscriber)
         ytchat = None
         if 'youtube_enabled' in config:
             if config['youtube_enabled']:
+                console.display_message("Grabbing youtube chat id")
                 chatId = get_live_chat_id_for_stream_now('oauth_creds')
+                console.display_message("Loading youtube chat handler")
                 ytchat = YoutubeLiveChat('oauth_creds', [chatId])
                 ytchat.subscribe_chat_message(console.new_ytmessage)
         if 'ignored_users' in config:
             for user in config['ignored_users']:
                 console.ignore_user(user)
         try:
+            console.display_message("Loading complete, awaiting messages")
             console.start()
             thandler.start()
             tirc.start()

@@ -11,6 +11,8 @@ import ssl
 import sys
 import unicodedata
 from PIL import Image
+logging.getLogger("PIL").setLevel(logging.WARNING)
+
 PY3 = sys.version_info[0] == 3
 
 if PY3:
@@ -361,8 +363,6 @@ class TwitchChatDisplay(object):
         self.twitchimages = TwitchImages(self.font_helper.font_height)
         self.yt_logo = self.load_yt_icon(self.font_helper.font_height)
         self.youtube_profile_images = YTProfileImages(self.font_helper.font_height)
-        self.chatscreen.add_chatlines([self.render_text("Loading complete. Waiting for twitch messages..",
-                                                        self.txt_color)])
 
     def load_yt_icon(self, height):
         surface = pygame.image.load("yt_icon.png")
@@ -383,7 +383,7 @@ class TwitchChatDisplay(object):
     def stop(self):
         self.chatscreen.stop()
 
-    def display_message(self, text, duration):
+    def display_message(self, text):
         self.chatscreen.blit_quicktext(text, self.txt_color)
 
     def get_usercolor(self, username, usercolor=None):
