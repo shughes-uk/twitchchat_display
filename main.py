@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import argparse
 import logging
 import os
 import signal
 import sys
 import time
+
+import pygame
 from yaml import load
-from twitchchat import twitch_chat
+
 from display import TwitchChatDisplay
+from twitchchat import twitch_chat
 from twitchevents import twitchevents
 from youtubechat import YoutubeLiveChat, get_live_chat_id_for_stream_now
-import argparse
-import pygame
+
 logger = logging.getLogger('twitch_monitor')
 PY3 = sys.version_info[0] == 3
 

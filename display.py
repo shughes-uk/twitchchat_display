@@ -1,16 +1,18 @@
-import os
-import time
-import logging
-from threading import Timer, Thread, Lock
-from fontTools.ttLib import TTFont
 import json
+import logging
+import os
 import random
 import re
-import webcolors
 import ssl
 import sys
+import time
 import unicodedata
+from threading import Lock, Thread, Timer
+
+import webcolors
+from fontTools.ttLib import TTFont
 from PIL import Image
+
 logging.getLogger("PIL").setLevel(logging.WARNING)
 
 PY3 = sys.version_info[0] == 3
