@@ -20,11 +20,13 @@ PY3 = sys.version_info[0] == 3
 if PY3:
     string_types = str,
     from urllib.request import urlopen
+    from urllib.error import HTTPError
     import pygame.ftfont
     pygame.font = pygame.ftfont
 else:
     string_types = basestring,
     from urllib import urlopen
+    from urllib import HTTPError
     import pygame.font
 
 FONT_PATHS = ["FreeSans.ttf", "OpenSansEmoji.ttf", "Cyberbit.ttf", "unifont.ttf"]
@@ -236,16 +238,20 @@ class TwitchImages(object):
                 im.save('badgecache/{0}_{1}.png'.format(channel, btype))
 
     def download_emote(self, id):
-        response = None
-        while not response:
+
+        def try_open(target_url):
             try:
-                response = urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/3.0'.format(id))
-                if response.getcode() != 200:
-                    response = urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/2.0'.format(id))
-                if response.getcode() != 200:
-                    response = urlopen('http://static-cdn.jtvnw.net/emoticons/v1/{0}/1.0'.format(id))
+                return urlopen(target_url)
             except IOError:
-                logger.warn("Error downloading twitch emote, trying again")
+                return None
+
+        response = try_open('http://static-cdn.jtvnw.net/emoticons/v1/{0}/3.0'.format(id))
+        if not response or response.getcode() != 200:
+            response = try_open('http://static-cdn.jtvnw.net/emoticons/v1/{0}/2.0'.format(id))
+        if not response or response.getcode() != 200:
+            response = try_open('http://static-cdn.jtvnw.net/emoticons/v1/{0}/1.0'.format(id))
+        if not response:
+            raise Exception("Error trying to download twitch emote, id {0}".format(id))
         im = Image.open(response)
         im.save('emotecache/{0}.png'.format(id))
 
