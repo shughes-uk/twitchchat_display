@@ -190,7 +190,7 @@ class YTProfileImages(object):
         context = ssl._create_unverified_context()
         response = urlopen(url, context=context)
         im = Image.open(response)
-        im.save('profile_images/{0}.jpg'.format(channelId))
+        im.convert('RGB').save('profile_images/{0}.jpg'.format(channelId))
 
     def load_and_resize(self, filename):
         surface = pygame.image.load(filename)

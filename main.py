@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# This Python file uses the following encoding: utf-8
+
 
 import argparse
 import logging
@@ -60,7 +61,8 @@ def get_config():
 if __name__ == '__main__':
     signal.signal(signal.SIGTERM, signal_term_handler)
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--test", help="Subscribe to featured channels to aid testing", action="store_true")
+    parser.add_argument("-t", "--testtwitch", help="Subscribe to featured channels on twitch to aid testing", action="store_true")
+    parser.add_argument("-y", "--testyoutube", help="Subscribe to featured channels on youtube to aid testing", action="store_true")
     parser.add_argument('-d',
                         '--debug',
                         help="Enable debugging statements",
@@ -74,16 +76,19 @@ if __name__ == '__main__':
                         format='%(asctime)s.%(msecs)d %(levelname)s %(name)s : %(message)s',
                         datefmt='%H:%M:%S')
     config = get_config()
-    if args.test:
-        from twitch.api import v3 as twitch
-        featured_streams = twitch.streams.featured(limit=5)['featured']
-        for x in featured_streams:
-            config['twitch_channels'].append(x['stream']['channel']['name'])
+    if args.testtwitch or args.testyoutube:
         import shutil
         shutil.rmtree('logocache', ignore_errors=True)
         shutil.rmtree('badgecache', ignore_errors=True)
         shutil.rmtree('emotecache', ignore_errors=True)
         shutil.rmtree('profile_images', ignore_errors=True)
+
+    if args.testtwitch:
+        from twitch.api import v3 as twitch
+        featured_streams = twitch.streams.featured(limit=5)['featured']
+        for x in featured_streams:
+            config['twitch_channels'].append(x['stream']['channel']['name'])
+
 
     try:
         console = TwitchChatDisplay(config['screen_width'], config['screen_height'])
@@ -99,7 +104,12 @@ if __name__ == '__main__':
         if 'youtube_enabled' in config:
             if config['youtube_enabled']:
                 console.display_message("Grabbing youtube chat id")
-                chatId = get_live_chat_id_for_stream_now('oauth_creds')
+                chatId = None
+                if args.testyoutube:
+                    from youtubechat import get_top_stream_chat_ids
+                    chatId = get_top_stream_chat_ids("oauth_creds")[0]
+                else:
+                    chatId = get_live_chat_id_for_stream_now('oauth_creds')
                 console.display_message("Loading youtube chat handler")
                 ytchat = YoutubeLiveChat('oauth_creds', [chatId])
                 ytchat.subscribe_chat_message(console.new_ytmessage)
