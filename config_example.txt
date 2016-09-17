@@ -1,5 +1,6 @@
 twitch_username : "your account name here"
 twitch_oauth : "oauth:twitch oauth"
+client_id : "your twitch client id here"
 twitch_channels :
 - "animaggus"
 - "collectablecat"

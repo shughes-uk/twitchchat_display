@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # This Python file uses the following encoding: utf-8
 
-
 import argparse
 import logging
 import os
@@ -36,7 +35,7 @@ def get_config():
     if os.path.isfile('config.txt'):
         try:
             config = load(open('config.txt', 'r'))
-            required_settings = ['twitch_username', 'twitch_oauth', 'twitch_channels']
+            required_settings = ['twitch_username', 'twitch_oauth', 'twitch_channels', 'client_id']
             for setting in required_settings:
                 if setting not in config:
                     msg = '{} not present in config.txt, put it there! check config_example.txt!'.format(setting)
@@ -61,20 +60,22 @@ def get_config():
 if __name__ == '__main__':
     signal.signal(signal.SIGTERM, signal_term_handler)
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--testtwitch", help="Subscribe to featured channels on twitch to aid testing", action="store_true")
-    parser.add_argument("-y", "--testyoutube", help="Subscribe to featured channels on youtube to aid testing", action="store_true")
-    parser.add_argument('-d',
-                        '--debug',
-                        help="Enable debugging statements",
-                        action="store_const",
-                        dest="loglevel",
-                        const=logging.DEBUG,
-                        default=logging.INFO,)
+    parser.add_argument(
+        "-t", "--testtwitch", help="Subscribe to featured channels on twitch to aid testing", action="store_true")
+    parser.add_argument(
+        "-y", "--testyoutube", help="Subscribe to featured channels on youtube to aid testing", action="store_true")
+    parser.add_argument(
+        '-d',
+        '--debug',
+        help="Enable debugging statements",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+        default=logging.INFO,)
     args = parser.parse_args()
 
-    logging.basicConfig(level=args.loglevel,
-                        format='%(asctime)s.%(msecs)d %(levelname)s %(name)s : %(message)s',
-                        datefmt='%H:%M:%S')
+    logging.basicConfig(
+        level=args.loglevel, format='%(asctime)s.%(msecs)d %(levelname)s %(name)s : %(message)s', datefmt='%H:%M:%S')
     config = get_config()
     if args.testtwitch or args.testyoutube:
         import shutil
@@ -89,7 +90,6 @@ if __name__ == '__main__':
         for x in featured_streams:
             config['twitch_channels'].append(x['stream']['channel']['name'])
 
-
     try:
         console = TwitchChatDisplay(config['screen_width'], config['screen_height'])
         console.display_message("Loading twitch_api manager")
@@ -97,7 +97,8 @@ if __name__ == '__main__':
         thandler.subscribe_new_follow(console.new_followers)
         thandler.subscribe_viewers_change(console.new_viewers)
         console.display_message("Loading twitch_message handler")
-        tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'])
+        tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'],
+                           config['client_id'])
         tirc.subscribeChatMessage(console.new_twitchmessage)
         tirc.subscribeNewSubscriber(console.new_subscriber)
         ytchat = None
