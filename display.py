@@ -24,7 +24,8 @@ if PY3:
     pygame.font = pygame.ftfont
 else:
     string_types = basestring,
-    from urllib import urlopen, request as Request
+    from urllib import urlopen
+    from urllib2 import Request
     import pygame.font
 
 FONT_PATHS = ["FreeSans.ttf", "OpenSansEmoji.ttf", "Cyberbit.ttf", "unifont.ttf"]
