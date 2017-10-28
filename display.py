@@ -19,12 +19,12 @@ PY3 = sys.version_info[0] == 3
 
 if PY3:
     string_types = str,
-    from urllib.request import urlopen
+    from urllib.request import urlopen, Request
     import pygame.ftfont
     pygame.font = pygame.ftfont
 else:
     string_types = basestring,
-    from urllib import urlopen
+    from urllib import urlopen, request as Request
     import pygame.font
 
 FONT_PATHS = ["FreeSans.ttf", "OpenSansEmoji.ttf", "Cyberbit.ttf", "unifont.ttf"]
@@ -205,11 +205,17 @@ class YTProfileImages(object):
 
 class TwitchImages(object):
 
-    def __init__(self, height):
+    def __init__(self, height, client_id):
         self.emotes = {}
         self.badges = {}
         self.logos = {}
         self.img_height = height
+        self.client_id = client_id
+
+    def _urlopen_authenticated(self, url):
+        req = Request(url)
+        req.add_header('Client-ID', self.client_id)
+        return urlopen(req)
 
     def get_emote(self, id):
         if id not in self.emotes:
@@ -227,11 +233,11 @@ class TwitchImages(object):
         return self.logos[channel]
 
     def download_badges(self, channel):
-        response = urlopen('https://api.twitch.tv/kraken/chat/{0}/badges'.format(channel)).read().decode("UTF-8")
+        response = self._urlopen_authenticated('https://api.twitch.tv/kraken/chat/{0}/badges'.format(channel)).read().decode("UTF-8")
         data = json.loads(response)
         for btype in BADGE_TYPES:
             if data[btype]:
-                response = urlopen(data[btype]['image'])
+                response = self._urlopen_authenticated(data[btype]['image'])
                 im = Image.open(response)
                 im.save('badgecache/{0}_{1}.png'.format(channel, btype))
 
@@ -239,7 +245,7 @@ class TwitchImages(object):
 
         def try_open(target_url):
             try:
-                return urlopen(target_url)
+                return self._urlopen_authenticated(target_url)
             except IOError:
                 return None
 
@@ -254,9 +260,10 @@ class TwitchImages(object):
         im.save('emotecache/{0}.png'.format(id))
 
     def download_logo(self, channel):
-        response = urlopen('https://api.twitch.tv/kraken/users/{0}'.format(channel)).read().decode("UTF-8")
+        print(channel)
+        response = self._urlopen_authenticated('https://api.twitch.tv/kraken/users/{0}'.format(channel)).read().decode("UTF-8")
         data = json.loads(response)
-        response = urlopen(data['logo'])
+        response = self._urlopen_authenticated(data['logo'])
         im = Image.open(response)
         im.save('logocache/{0}.png'.format(channel))
 
@@ -353,7 +360,7 @@ class FontHelper(object):
 
 class TwitchChatDisplay(object):
 
-    def __init__(self, screen_width, screen_height):
+    def __init__(self, screen_width, screen_height, client_id):
         self.bg_color = [0x32, 0x32, 0x3E]
         self.txt_color = [0xFF, 0xFF, 0xFF]
         self.usercolors = {}
@@ -366,7 +373,7 @@ class TwitchChatDisplay(object):
             self.chatscreen.blit_quicktext("Loading font {0}".format(fontp), self.txt_color)
             self.font_helper.load_font(fontp)
         self.chatscreen.set_line_height(self.font_helper.font_height)
-        self.twitchimages = TwitchImages(self.font_helper.font_height)
+        self.twitchimages = TwitchImages(self.font_helper.font_height, client_id)
         self.yt_logo = self.load_yt_icon(self.font_helper.font_height)
         self.youtube_profile_images = YTProfileImages(self.font_helper.font_height)
 

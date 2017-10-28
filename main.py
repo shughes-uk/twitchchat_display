@@ -91,7 +91,7 @@ if __name__ == '__main__':
             config['twitch_channels'].append(x['stream']['channel']['name'])
 
     try:
-        console = TwitchChatDisplay(config['screen_width'], config['screen_height'])
+        console = TwitchChatDisplay(config['screen_width'], config['screen_height'], config['client_id'])
         console.display_message("Loading twitch_api manager")
         thandler = twitchevents(config['twitch_channels'])
         thandler.subscribe_new_follow(console.new_followers)

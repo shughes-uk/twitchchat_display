@@ -5,4 +5,4 @@ pillow
 pyyaml
 fonttools
 webcolors
-hg+http://bitbucket.org/pygame/pygame
+git+git://github.com/pygame/pygame.git
