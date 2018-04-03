@@ -362,7 +362,7 @@ class FontHelper(object):
 class TwitchChatDisplay(object):
 
     def __init__(self, screen_width, screen_height, client_id):
-        self.bg_color = [0x32, 0x32, 0x3E]
+        self.bg_color = [0x28, 0x25, 0x38]
         self.txt_color = [0xFF, 0xFF, 0xFF]
         self.usercolors = {}
         self.ignore_list = []
