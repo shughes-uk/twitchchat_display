@@ -29,7 +29,7 @@ else:
     import pygame.font
 
 FONT_PATHS = ["FreeSans.ttf", "OpenSansEmoji.ttf", "Cyberbit.ttf", "unifont.ttf"]
-
+BOLD_FONT_PATHS = ['FreeSansBold.ttf']
 BADGE_TYPES = ['global_mod', 'admin', 'broadcaster', 'mod', 'staff', 'turbo', 'subscriber']
 logger = logging.getLogger("display")
 WIDTH = 0
@@ -311,14 +311,18 @@ class FontHelper(object):
         self.font_size = 48
         self.font_height = 0
         self.fonts = []
+        self.bold_fonts = []
 
-    def load_font(self, font_path):
+    def load_font(self, font_path, bold=False):
         logger.info("Loading font {0}".format(font_path))
         pg_font = pygame.font.Font(font_path, self.font_size)
         fontinfo = self.get_font_details(font_path)
         if pg_font.get_linesize() > self.font_height:
             self.font_height = pg_font.get_linesize()
-        self.fonts.append((pg_font, fontinfo, font_path))
+        if bold:
+            self.bold_fonts.append((pg_font, fontinfo, font_path))
+        else:
+            self.fonts.append((pg_font, fontinfo, font_path))
         logger.info("Loaded {0}".format(font_path))
 
     def get_font_details(self, font_path):
@@ -328,23 +332,27 @@ class FontHelper(object):
         finally:
             ttf.close()
 
-    def required_font(self, char):
+    def required_font(self, char, bold=False):
+        if bold:
+            fontlist = self.bold_fonts
+        else:
+            fontlist = self.fonts
         # probably dont need a crazy font for ascii range
         if ord(char) > 128:
-            for font in self.fonts:
+            for font in fontlist:
                 if ord(char) in font[1]:
                     return font
             logger.critical("Couldn't find font for character {0}".format(repr(char)))
-            return self.fonts[0]
+            return fontlist[0]
         else:
-            return self.fonts[0]
+            return fontlist[0]
 
-    def get_text_width(self, text):
-        current_font = self.required_font("a")
+    def get_text_width(self, text, bold=False):
+        current_font = self.required_font("a", bold)
         i = 0
         total_width = 0
         while i < len(text):
-            rq_font = self.required_font(text[i])
+            rq_font = self.required_font(text[i], bold)
             if rq_font != current_font:
                 if text[:i]:
                     width = current_font[0].size(text[:i])[WIDTH]
@@ -373,6 +381,10 @@ class TwitchChatDisplay(object):
         for fontp in FONT_PATHS:
             self.chatscreen.blit_quicktext("Loading font {0}".format(fontp), self.txt_color)
             self.font_helper.load_font(fontp)
+        for fontp in BOLD_FONT_PATHS:
+            self.chatscreen.blit_quicktext("Loading font {0}".format(fontp), self.txt_color)
+            self.font_helper.load_font(fontp, bold=True)
+
         self.chatscreen.set_line_height(self.font_helper.font_height)
         self.twitchimages = TwitchImages(self.font_helper.font_height, client_id)
         self.yt_logo = self.load_yt_icon(self.font_helper.font_height)
@@ -497,7 +509,7 @@ class TwitchChatDisplay(object):
         rendered_line = [self.yt_logo]
         ucolor = self.get_usercolor(message.author.display_name)
         rendered_line.append(self.render_yt_profile(message.author))
-        rendered_line.extend(self.render_text(message.author.display_name, ucolor))
+        rendered_line.extend(self.render_text(message.author.display_name, ucolor, bold=True))
         rendered_line.extend(self.render_text(' : ', self.txt_color))
         rendered_line.extend(list(message.message_text))
         wrapped_lines = self.wraptext(rendered_line, self.size[WIDTH])
@@ -509,7 +521,7 @@ class TwitchChatDisplay(object):
     def render_new_twitchmessage(self, message):
         rendered_line = self.render_prepends(message['user-type'], bool(int(message['subscriber'])), message['channel'])
         ucolor = self.get_usercolor(message['username'], message['color'])
-        rendered_line.extend(self.render_text(message['display-name'] or message['username'], ucolor))
+        rendered_line.extend(self.render_text(message['display-name'] or message['username'], ucolor, bold=True))
         rendered_line.extend(self.render_text(' : ', self.txt_color))
         rendered_line.extend(self.render_emotes(message['message'], message['emotes']))
         wrapped_lines = self.wraptext(rendered_line, self.size[WIDTH])
@@ -554,16 +566,16 @@ class TwitchChatDisplay(object):
             lines.append(rendered)
         return lines
 
-    def render_text(self, text, color, aa=True):
+    def render_text(self, text, color, aa=True, bold=False):
         surfaces = []
         if isinstance(text, list):
             for item in text:
                 surfaces.extend(self.render_text(item, color, aa))
         elif isinstance(text, string_types):
-            current_font = self.font_helper.required_font("a")
+            current_font = self.font_helper.required_font("a", bold)
             i = 0
             while i < len(text):
-                rq_font = self.font_helper.required_font(text[i])
+                rq_font = self.font_helper.required_font(text[i], bold)
                 if rq_font != current_font:
                     if text[:i]:
                         part = current_font[0].render(text[:i], aa, color)
