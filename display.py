@@ -8,10 +8,11 @@ import sys
 import time
 import unicodedata
 from threading import Lock, Thread, Timer
-
+from pprint import pprint
 import webcolors
 from fontTools.ttLib import TTFont
 from PIL import Image
+from functools import lru_cache
 
 logging.getLogger("PIL").setLevel(logging.WARNING)
 
@@ -212,8 +213,19 @@ class TwitchImages(object):
         self.logos = {}
         self.img_height = height
         self.client_id = client_id
+        # self.channel_sub_json = Request('https://badges.twitch.tv/v1/badges/channels/{channel_id}/display?language=en').read().decode("UTF-8")
+        # self.global_badge_json = Request('https://badges.twitch.tv/v1/badges/global/display?language=en').read().decode(
+        #     "UTF-8")
+        # self.channel_sub_json = json.loads(self.channel_sub_json)
+        # self.global_badge_json = json.loads(self.channel_sub_json)
+        self.chan_id_map = {}
 
-    def _urlopen_authenticated(self, url):
+    def _request(self, url):
+        req = Request(url)
+        req.add_header('Client-ID', self.client_id)
+        return urlopen(req).read().decode('utf-8')
+
+    def _request_noread(self, url):
         req = Request(url)
         req.add_header('Client-ID', self.client_id)
         return urlopen(req)
@@ -223,30 +235,44 @@ class TwitchImages(object):
             self.load_emote(id)
         return self.emotes[id]
 
-    def get_badge(self, channel, btype):
-        if channel not in self.badges:
-            self.load_badges(channel)
-        return self.badges[channel][btype]
+    def get_badge(self, bcode, channel_id):
+        print('Badgecode', bcode)
+        bcode_key, bcode_version = bcode.split('/')
+        badge = self.load_badge(bcode_key, bcode_version, channel_id)
+        return badge
 
     def get_logo(self, channel):
         if channel not in self.logos:
             self.load_logo(channel)
         return self.logos[channel]
 
-    def download_badges(self, channel):
-        response = self._urlopen_authenticated('https://api.twitch.tv/kraken/chat/{0}/badges'.format(channel)).read().decode("UTF-8")
-        data = json.loads(response)
-        for btype in BADGE_TYPES:
-            if data[btype]:
-                response = self._urlopen_authenticated(data[btype]['image'])
-                im = Image.open(response)
-                im.save('badgecache/{0}_{1}.png'.format(channel, btype))
+    @lru_cache(maxsize=1)
+    def download_global_badgelist(self):
+        url = 'https://badges.twitch.tv/v1/badges/global/display?language=en'
+        blob = json.loads(self._request(url))
+        return blob
+
+    def get_badge_image(self, bcode, bcode_v, channel_id):
+        if bcode == 'subscriber':
+            url = 'https://badges.twitch.tv/v1/badges/channels/{channel_id}/display?language=en'
+            badge_sets = json.loads(self._request(url.format(channel_id=channel_id)))['badge_sets']
+            try:
+                badge_url = badge_sets[bcode]['versions'][bcode_v]['image_url_4x']
+            except KeyError as e:
+                badge_sets = self.download_global_badgelist()['badge_sets']
+                badge_url = badge_sets[bcode]['versions'][bcode_v]['image_url_4x']
+        else:
+            badge_sets = self.download_global_badgelist()['badge_sets']
+            badge_url = badge_sets[bcode]['versions'][bcode_v]['image_url_4x']
+        response = self._request_noread(badge_url)
+        im = Image.open(response)
+        return im
 
     def download_emote(self, id):
 
         def try_open(target_url):
             try:
-                return self._urlopen_authenticated(target_url)
+                return self._request_noread(target_url)
             except IOError:
                 return None
 
@@ -261,10 +287,9 @@ class TwitchImages(object):
         im.save('emotecache/{0}.png'.format(id))
 
     def download_logo(self, channel):
-        print(channel)
-        response = self._urlopen_authenticated('https://api.twitch.tv/kraken/users/{0}'.format(channel)).read().decode("UTF-8")
+        response = self._request('https://api.twitch.tv/kraken/users/{0}'.format(channel))
         data = json.loads(response)
-        response = self._urlopen_authenticated(data['logo'])
+        response = self._request_noread(data['logo'])
         im = Image.open(response)
         im.save('logocache/{0}.png'.format(channel))
 
@@ -278,15 +303,17 @@ class TwitchImages(object):
         else:
             return resized.convert_alpha()
 
-    def load_badges(self, channel):
-        if not os.path.isfile('badgecache/{0}_{1}.png'.format(channel, BADGE_TYPES[0])):
-            if not os.path.isdir('badgecache'):
-                os.mkdir('badgecache')
-            self.download_badges(channel)
-        self.badges[channel] = {}
-        for btype in BADGE_TYPES:
-            if os.path.isfile('badgecache/{0}_{1}.png'.format(channel, btype)):
-                self.badges[channel][btype] = self.load_and_resize('badgecache/{0}_{1}.png'.format(channel, btype))
+    @lru_cache(maxsize=1000)
+    def load_badge(self, bcode, bcode_v, channel):
+        if bcode == 'subscriber':
+            badge_path = 'badgecache/{0}/{1}_{2}.png'.format(channel, bcode, bcode_v)
+        else:
+            badge_path = 'badgecache/{0}_{1}.png'.format(bcode, bcode_v)
+        if not os.path.isfile(badge_path):
+            os.makedirs(os.path.dirname(badge_path), exist_ok=True)
+            b_img = self.get_badge_image(bcode, bcode_v, channel)
+            b_img.save(badge_path)
+        return self.load_and_resize(badge_path)
 
     def load_logo(self, channel):
         if not os.path.isfile('logocache/{0}.png'.format(channel)):
@@ -450,14 +477,11 @@ class TwitchChatDisplay(object):
         self.chatscreen.viewers[name] = viewercount
 
     def render_new_subscriber(self, channel, subscriber, months):
-        sub_badge = self.twitchimages.get_badge(channel, "subscriber")
         if months == 0:
             text = " {0} subscribed to {1}! ".format(subscriber, channel, months)
         else:
             text = " {0} subscribed to {1} for {2} months in a row! ".format(subscriber, channel, months)
         rendered = self.render_text(text, self.txt_color)
-        rendered.insert(0, sub_badge)
-        rendered.append(sub_badge)
         return rendered
 
     def render_emotes(self, text, emotes):
@@ -494,12 +518,11 @@ class TwitchChatDisplay(object):
                 i += 1
         return rendered
 
-    def render_prepends(self, usertype, subscriber, channel):
+    def render_prepends(self, badges, channel, room_id):
         prepends = [self.twitchimages.get_logo(channel)]
-        if usertype:
-            prepends.append(self.twitchimages.get_badge(channel, usertype))
-        if subscriber:
-            prepends.append(self.twitchimages.get_badge(channel, 'subscriber'))
+        if badges:
+            for badge in badges.split(','):
+                prepends.append(self.twitchimages.get_badge(badge, room_id))
         return prepends
 
     def render_yt_profile(self, author):
@@ -519,7 +542,7 @@ class TwitchChatDisplay(object):
         return new_lines
 
     def render_new_twitchmessage(self, message):
-        rendered_line = self.render_prepends(message['user-type'], bool(int(message['subscriber'])), message['channel'])
+        rendered_line = self.render_prepends(message['badges'], message['channel'], message['room-id'])
         ucolor = self.get_usercolor(message['username'], message['color'])
         rendered_line.extend(self.render_text(message['display-name'] or message['username'], ucolor, bold=True))
         rendered_line.extend(self.render_text(' : ', self.txt_color))
