@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     if args.testtwitch:
         from twitch.api import v3 as twitch
-        featured_streams = twitch.streams.featured(limit=5)['featured']
+        featured_streams = twitch.streams.featured(limit=15)['featured']
         for x in featured_streams:
             config['twitch_channels'].append(x['stream']['channel']['name'])
 
@@ -100,7 +100,7 @@ if __name__ == '__main__':
         tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], config['twitch_channels'],
                            config['client_id'])
         tirc.subscribeChatMessage(console.new_twitchmessage)
-        tirc.subscribeNewSubscriber(console.new_subscriber)
+        tirc.subscribeUsernotice(console.new_usernotice)
         ytchat = None
         if 'youtube_enabled' in config:
             if config['youtube_enabled']:

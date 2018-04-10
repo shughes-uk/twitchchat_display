@@ -464,8 +464,9 @@ class TwitchChatDisplay(object):
                 new_lines = self.render_new_ytmessage(msgobj)
                 self.chatscreen.add_chatlines(new_lines)
 
-    def new_subscriber(self, channel, subscriber, months):
-        new_line = self.render_new_subscriber(channel, subscriber, months)
+    def new_usernotice(self, args):
+        message = args['system-msg'].replace('\\s', ' ')
+        new_line = self.render_text(message, self.txt_color)
         self.chatscreen.add_chatlines([new_line])
 
     def new_followers(self, new_followers, name, total):
