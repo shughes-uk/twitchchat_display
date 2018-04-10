@@ -236,7 +236,6 @@ class TwitchImages(object):
         return self.emotes[id]
 
     def get_badge(self, bcode, channel_id):
-        print('Badgecode', bcode)
         bcode_key, bcode_version = bcode.split('/')
         badge = self.load_badge(bcode_key, bcode_version, channel_id)
         return badge
