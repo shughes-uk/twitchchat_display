@@ -1,8 +1,6 @@
 git+git://github.com/shughes-uk/python-twitchchat.git
-git+git://github.com/shughes-uk/python-youtubechat.git
-git+git://github.com/shughes-uk/python-twitchevents.git
 pillow
 pyyaml
 fonttools
 webcolors
-git+git://github.com/pygame/pygame.git
+pygame

@@ -1,0 +1,259 @@
+[[package]]
+category = "main"
+description = "Python package for providing Mozilla's CA Bundle."
+name = "certifi"
+optional = false
+python-versions = "*"
+version = "2020.4.5.1"
+
+[[package]]
+category = "main"
+description = "Universal encoding detector for Python 2 and 3"
+name = "chardet"
+optional = false
+python-versions = "*"
+version = "3.0.4"
+
+[[package]]
+category = "main"
+description = "Composable command line interface toolkit"
+name = "click"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "7.1.2"
+
+[[package]]
+category = "main"
+description = "Cross-platform colored terminal text."
+marker = "sys_platform == \"win32\""
+name = "colorama"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "0.4.3"
+
+[[package]]
+category = "main"
+description = "Log formatting with colors!"
+name = "colorlog"
+optional = false
+python-versions = "*"
+version = "4.1.0"
+
+[package.dependencies]
+colorama = "*"
+
+[[package]]
+category = "main"
+description = "Tools to manipulate font files"
+name = "fonttools"
+optional = false
+python-versions = ">=3.6"
+version = "4.9.0"
+
+[package.extras]
+all = ["fs (>=2.2.0,<3)", "lxml (>=4.0,<5)", "zopfli (>=0.1.4)", "lz4 (>=1.7.4.2)", "matplotlib", "sympy", "brotli (>=1.0.1)", "scipy", "brotlipy (>=0.7.0)", "munkres", "unicodedata2 (>=13.0.0)", "xattr"]
+graphite = ["lz4 (>=1.7.4.2)"]
+interpolatable = ["scipy", "munkres"]
+lxml = ["lxml (>=4.0,<5)"]
+plot = ["matplotlib"]
+symfont = ["sympy"]
+type1 = ["xattr"]
+ufo = ["fs (>=2.2.0,<3)"]
+unicode = ["unicodedata2 (>=13.0.0)"]
+woff = ["zopfli (>=0.1.4)", "brotli (>=1.0.1)", "brotlipy (>=0.7.0)"]
+
+[[package]]
+category = "main"
+description = "Internationalized Domain Names in Applications (IDNA)"
+name = "idna"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "2.9"
+
+[[package]]
+category = "main"
+description = "Python Imaging Library (Fork)"
+name = "pillow"
+optional = false
+python-versions = ">=3.5"
+version = "7.1.2"
+
+[[package]]
+category = "main"
+description = "Python Game Development"
+name = "pygame"
+optional = false
+python-versions = "*"
+version = "1.9.6"
+
+[[package]]
+category = "main"
+description = "YAML parser and emitter for Python"
+name = "pyyaml"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "5.3.1"
+
+[[package]]
+category = "main"
+description = "Python HTTP for Humans."
+name = "requests"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "2.23.0"
+
+[package.dependencies]
+certifi = ">=2017.4.17"
+chardet = ">=3.0.2,<4"
+idna = ">=2.5,<3"
+urllib3 = ">=1.21.1,<1.25.0 || >1.25.0,<1.25.1 || >1.25.1,<1.26"
+
+[package.extras]
+security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)"]
+socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
+
+[[package]]
+category = "main"
+description = ""
+name = "twitchchat"
+optional = false
+python-versions = "*"
+version = "0.1"
+
+[package.source]
+reference = "d30a79fd69427884167ae500492c60829f0e97a9"
+type = "git"
+url = "https://github.com/shughes-uk/python-twitchchat.git"
+[[package]]
+category = "main"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+name = "urllib3"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
+version = "1.25.9"
+
+[package.extras]
+brotli = ["brotlipy (>=0.6.0)"]
+secure = ["certifi", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "pyOpenSSL (>=0.14)", "ipaddress"]
+socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
+
+[[package]]
+category = "main"
+description = "A library for working with color names and color values formats defined by HTML and CSS."
+name = "webcolors"
+optional = false
+python-versions = ">=3.5,"
+version = "1.11.1"
+
+[metadata]
+content-hash = "dd20c62a09801c16db98536dbc0205096293d82c348046d4d76bacf765d7ce0a"
+python-versions = "^3.7"
+
+[metadata.files]
+certifi = [
+    {file = "certifi-2020.4.5.1-py2.py3-none-any.whl", hash = "sha256:1d987a998c75633c40847cc966fcf5904906c920a7f17ef374f5aa4282abd304"},
+    {file = "certifi-2020.4.5.1.tar.gz", hash = "sha256:51fcb31174be6e6664c5f69e3e1691a2d72a1a12e90f872cbdb1567eb47b6519"},
+]
+chardet = [
+    {file = "chardet-3.0.4-py2.py3-none-any.whl", hash = "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"},
+    {file = "chardet-3.0.4.tar.gz", hash = "sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae"},
+]
+click = [
+    {file = "click-7.1.2-py2.py3-none-any.whl", hash = "sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc"},
+    {file = "click-7.1.2.tar.gz", hash = "sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a"},
+]
+colorama = [
+    {file = "colorama-0.4.3-py2.py3-none-any.whl", hash = "sha256:7d73d2a99753107a36ac6b455ee49046802e59d9d076ef8e47b61499fa29afff"},
+    {file = "colorama-0.4.3.tar.gz", hash = "sha256:e96da0d330793e2cb9485e9ddfd918d456036c7149416295932478192f4436a1"},
+]
+colorlog = [
+    {file = "colorlog-4.1.0-py2.py3-none-any.whl", hash = "sha256:732c191ebbe9a353ec160d043d02c64ddef9028de8caae4cfa8bd49b6afed53e"},
+    {file = "colorlog-4.1.0.tar.gz", hash = "sha256:30aaef5ab2a1873dec5da38fd6ba568fa761c9fa10b40241027fa3edea47f3d2"},
+]
+fonttools = [
+    {file = "fonttools-4.9.0-py3-none-any.whl", hash = "sha256:2d3cb0d81bb8c145b653deb4e3ad5777709d8a5c4a90640dde895c72e7394a40"},
+    {file = "fonttools-4.9.0.zip", hash = "sha256:16dd6ae4d057e170756339cde146e7295c721baad46e197b98a68d4cdd425c94"},
+]
+idna = [
+    {file = "idna-2.9-py2.py3-none-any.whl", hash = "sha256:a068a21ceac8a4d63dbfd964670474107f541babbd2250d61922f029858365fa"},
+    {file = "idna-2.9.tar.gz", hash = "sha256:7588d1c14ae4c77d74036e8c22ff447b26d0fde8f007354fd48a7814db15b7cb"},
+]
+pillow = [
+    {file = "Pillow-7.1.2-cp35-cp35m-macosx_10_10_intel.whl", hash = "sha256:ae2b270f9a0b8822b98655cb3a59cdb1bd54a34807c6c56b76dd2e786c3b7db3"},
+    {file = "Pillow-7.1.2-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:d23e2aa9b969cf9c26edfb4b56307792b8b374202810bd949effd1c6e11ebd6d"},
+    {file = "Pillow-7.1.2-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:b532bcc2f008e96fd9241177ec580829dee817b090532f43e54074ecffdcd97f"},
+    {file = "Pillow-7.1.2-cp35-cp35m-win32.whl", hash = "sha256:12e4bad6bddd8546a2f9771485c7e3d2b546b458ae8ff79621214119ac244523"},
+    {file = "Pillow-7.1.2-cp35-cp35m-win_amd64.whl", hash = "sha256:9744350687459234867cbebfe9df8f35ef9e1538f3e729adbd8fde0761adb705"},
+    {file = "Pillow-7.1.2-cp36-cp36m-macosx_10_10_x86_64.whl", hash = "sha256:f54be399340aa602066adb63a86a6a5d4f395adfdd9da2b9a0162ea808c7b276"},
+    {file = "Pillow-7.1.2-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:1f694e28c169655c50bb89a3fa07f3b854d71eb47f50783621de813979ba87f3"},
+    {file = "Pillow-7.1.2-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:f784aad988f12c80aacfa5b381ec21fd3f38f851720f652b9f33facc5101cf4d"},
+    {file = "Pillow-7.1.2-cp36-cp36m-win32.whl", hash = "sha256:b37bb3bd35edf53125b0ff257822afa6962649995cbdfde2791ddb62b239f891"},
+    {file = "Pillow-7.1.2-cp36-cp36m-win_amd64.whl", hash = "sha256:b67a6c47ed963c709ed24566daa3f95a18f07d3831334da570c71da53d97d088"},
+    {file = "Pillow-7.1.2-cp37-cp37m-macosx_10_10_x86_64.whl", hash = "sha256:eaa83729eab9c60884f362ada982d3a06beaa6cc8b084cf9f76cae7739481dfa"},
+    {file = "Pillow-7.1.2-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:f46e0e024346e1474083c729d50de909974237c72daca05393ee32389dabe457"},
+    {file = "Pillow-7.1.2-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:0e2a3bceb0fd4e0cb17192ae506d5f082b309ffe5fc370a5667959c9b2f85fa3"},
+    {file = "Pillow-7.1.2-cp37-cp37m-win32.whl", hash = "sha256:ccc9ad2460eb5bee5642eaf75a0438d7f8887d484490d5117b98edd7f33118b7"},
+    {file = "Pillow-7.1.2-cp37-cp37m-win_amd64.whl", hash = "sha256:b943e71c2065ade6fef223358e56c167fc6ce31c50bc7a02dd5c17ee4338e8ac"},
+    {file = "Pillow-7.1.2-cp38-cp38-macosx_10_10_x86_64.whl", hash = "sha256:04766c4930c174b46fd72d450674612ab44cca977ebbcc2dde722c6933290107"},
+    {file = "Pillow-7.1.2-cp38-cp38-manylinux1_i686.whl", hash = "sha256:f455efb7a98557412dc6f8e463c1faf1f1911ec2432059fa3e582b6000fc90e2"},
+    {file = "Pillow-7.1.2-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:ee94fce8d003ac9fd206496f2707efe9eadcb278d94c271f129ab36aa7181344"},
+    {file = "Pillow-7.1.2-cp38-cp38-win32.whl", hash = "sha256:4b02b9c27fad2054932e89f39703646d0c543f21d3cc5b8e05434215121c28cd"},
+    {file = "Pillow-7.1.2-cp38-cp38-win_amd64.whl", hash = "sha256:3d25dd8d688f7318dca6d8cd4f962a360ee40346c15893ae3b95c061cdbc4079"},
+    {file = "Pillow-7.1.2-pp373-pypy36_pp73-win32.whl", hash = "sha256:0f01e63c34f0e1e2580cc0b24e86a5ccbbfa8830909a52ee17624c4193224cd9"},
+    {file = "Pillow-7.1.2-py3.8-macosx-10.9-x86_64.egg", hash = "sha256:70e3e0d99a0dcda66283a185f80697a9b08806963c6149c8e6c5f452b2aa59c0"},
+    {file = "Pillow-7.1.2.tar.gz", hash = "sha256:a0b49960110bc6ff5fead46013bcb8825d101026d466f3a4de3476defe0fb0dd"},
+]
+pygame = [
+    {file = "pygame-1.9.6-cp27-cp27m-macosx_10_11_intel.whl", hash = "sha256:4aaff572a273a32e70ec3593d213e59ab11c183a9916616562247930f17a5447"},
+    {file = "pygame-1.9.6-cp27-cp27m-win32.whl", hash = "sha256:73cd9df328c7e72638dbcc1d18e7155225faed880a53db6bad90d1d7c0a71dfd"},
+    {file = "pygame-1.9.6-cp27-cp27m-win_amd64.whl", hash = "sha256:9ce22fb72298ea33dbb3a1c6c60a4a4e19d9698df6f3f5782eba4dada7b7736d"},
+    {file = "pygame-1.9.6-cp27-cp27mu-manylinux1_i686.whl", hash = "sha256:5f052dc2975a399aa1830c1f04c5f72856aa416bf3cd4b31375a058015a5c620"},
+    {file = "pygame-1.9.6-cp27-cp27mu-manylinux1_x86_64.whl", hash = "sha256:0480fe82cd41a43e3eea497fa2c059c72ac54cb5d003d5aa2ed06a04541c384e"},
+    {file = "pygame-1.9.6-cp34-cp34m-manylinux1_i686.whl", hash = "sha256:a6e8d2f99dbe1dfe72d0c019693c14d93c410f702d0b04ec9a81b36dacd55a23"},
+    {file = "pygame-1.9.6-cp34-cp34m-manylinux1_x86_64.whl", hash = "sha256:698433a9fcefca0527244dc44dff9503eb26157494730b1cc80e6e4dbb246e92"},
+    {file = "pygame-1.9.6-cp34-cp34m-win32.whl", hash = "sha256:68ea43e51150316b9fb08e251209d4e2b4e76a340b5b6fc8cdf1a898c78f7e5b"},
+    {file = "pygame-1.9.6-cp34-cp34m-win_amd64.whl", hash = "sha256:4e1065577f1b29111113be5deb2ea88553551a5e1cf33e0c08fa32768f285809"},
+    {file = "pygame-1.9.6-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:6f714986f7987f10cb94f1be0753318e341a7ea6b12d66f37a4d5d6dd4695023"},
+    {file = "pygame-1.9.6-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:ae1bc3e78ed28f20878e7ca2c98663a6634e9c00d7746d39413fc18e907dc162"},
+    {file = "pygame-1.9.6-cp35-cp35m-win32.whl", hash = "sha256:854e87b8b2b76e3ed11d64985fcfdd7af919659503de99fc2b0a717b314c3cf0"},
+    {file = "pygame-1.9.6-cp35-cp35m-win_amd64.whl", hash = "sha256:2622b9dd95f445c887a36a57eade42c672598589f69a8052ccdb8eeeffa4dbb1"},
+    {file = "pygame-1.9.6-cp36-cp36m-macosx_10_11_intel.whl", hash = "sha256:398c42b605ecc514e62f68f1944a2d21e247938309f598de6cb0ad3c207324a8"},
+    {file = "pygame-1.9.6-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:fa788f775680fc5d268ab00a2da29c9a22830032cfab732730298a2952cd87f3"},
+    {file = "pygame-1.9.6-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:c895cf9c1b6d1cbba8cb8cc3f5427febcf8aa41a9333697741abeea1c537a350"},
+    {file = "pygame-1.9.6-cp36-cp36m-win32.whl", hash = "sha256:a37b6c59e7b8feadc51db5197052b86ceb6443f9fb2a6f7d6527620e707c558c"},
+    {file = "pygame-1.9.6-cp36-cp36m-win_amd64.whl", hash = "sha256:be7e70f91bd4eb35ae081062f16bf434619b3292358d9b061f8159ddc570c7f0"},
+    {file = "pygame-1.9.6-cp37-cp37m-macosx_10_11_intel.whl", hash = "sha256:7876d1f29f66d3d7cac46479503891ee1ef409b0fbce54b0d74f3a6b33a46dba"},
+    {file = "pygame-1.9.6-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:f1f5714d2c23f6a64ef2ac4fcd36a2dd2689da85978d951a99a6ae5dfdf9bdbc"},
+    {file = "pygame-1.9.6-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:136a3b5711d9ec369a0407e4e08ffced3ba61aa41059e9280ffffa79c8614f65"},
+    {file = "pygame-1.9.6-cp37-cp37m-win32.whl", hash = "sha256:a9ac862dd7159861f2c6443b0029089e1c0c4ec762a8074022914ec52fe4dfac"},
+    {file = "pygame-1.9.6-cp37-cp37m-win_amd64.whl", hash = "sha256:8da13704ad45b7d5de8a8cca135a7f44c7fc6aa9f691abe7b0392468a34a8013"},
+    {file = "pygame-1.9.6-cp38-cp38-win32.whl", hash = "sha256:396320aa29a925feed0b64639f77ce1418722ea7f536b4e4936083dd8d4c4535"},
+    {file = "pygame-1.9.6-cp38-cp38-win_amd64.whl", hash = "sha256:e3e7e4a09dfd8b03663222d6bcadec9fef021404f4d9eecf56825342e039dfc1"},
+    {file = "pygame-1.9.6.tar.gz", hash = "sha256:301c6428c0880ecd4a9e3951b80e539c33863b6ff356a443db1758de4f297957"},
+]
+pyyaml = [
+    {file = "PyYAML-5.3.1-cp27-cp27m-win32.whl", hash = "sha256:74809a57b329d6cc0fdccee6318f44b9b8649961fa73144a98735b0aaf029f1f"},
+    {file = "PyYAML-5.3.1-cp27-cp27m-win_amd64.whl", hash = "sha256:240097ff019d7c70a4922b6869d8a86407758333f02203e0fc6ff79c5dcede76"},
+    {file = "PyYAML-5.3.1-cp35-cp35m-win32.whl", hash = "sha256:4f4b913ca1a7319b33cfb1369e91e50354d6f07a135f3b901aca02aa95940bd2"},
+    {file = "PyYAML-5.3.1-cp35-cp35m-win_amd64.whl", hash = "sha256:cc8955cfbfc7a115fa81d85284ee61147059a753344bc51098f3ccd69b0d7e0c"},
+    {file = "PyYAML-5.3.1-cp36-cp36m-win32.whl", hash = "sha256:7739fc0fa8205b3ee8808aea45e968bc90082c10aef6ea95e855e10abf4a37b2"},
+    {file = "PyYAML-5.3.1-cp36-cp36m-win_amd64.whl", hash = "sha256:69f00dca373f240f842b2931fb2c7e14ddbacd1397d57157a9b005a6a9942648"},
+    {file = "PyYAML-5.3.1-cp37-cp37m-win32.whl", hash = "sha256:d13155f591e6fcc1ec3b30685d50bf0711574e2c0dfffd7644babf8b5102ca1a"},
+    {file = "PyYAML-5.3.1-cp37-cp37m-win_amd64.whl", hash = "sha256:73f099454b799e05e5ab51423c7bcf361c58d3206fa7b0d555426b1f4d9a3eaf"},
+    {file = "PyYAML-5.3.1-cp38-cp38-win32.whl", hash = "sha256:06a0d7ba600ce0b2d2fe2e78453a470b5a6e000a985dd4a4e54e436cc36b0e97"},
+    {file = "PyYAML-5.3.1-cp38-cp38-win_amd64.whl", hash = "sha256:95f71d2af0ff4227885f7a6605c37fd53d3a106fcab511b8860ecca9fcf400ee"},
+    {file = "PyYAML-5.3.1.tar.gz", hash = "sha256:b8eac752c5e14d3eca0e6dd9199cd627518cb5ec06add0de9d32baeee6fe645d"},
+]
+requests = [
+    {file = "requests-2.23.0-py2.py3-none-any.whl", hash = "sha256:43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee"},
+    {file = "requests-2.23.0.tar.gz", hash = "sha256:b3f43d496c6daba4493e7c431722aeb7dbc6288f52a6e04e7b6023b0247817e6"},
+]
+twitchchat = []
+urllib3 = [
+    {file = "urllib3-1.25.9-py2.py3-none-any.whl", hash = "sha256:88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115"},
+    {file = "urllib3-1.25.9.tar.gz", hash = "sha256:3018294ebefce6572a474f0604c2021e33b3fd8006ecd11d62107a5d2a963527"},
+]
+webcolors = [
+    {file = "webcolors-1.11.1-py3-none-any.whl", hash = "sha256:b8cd5d865a25c51ff1218f0c90d0c0781fc64312a49b746b320cf50de1648f6e"},
+    {file = "webcolors-1.11.1.tar.gz", hash = "sha256:76f360636957d1c976db7466bc71dcb713bb95ac8911944dffc55c01cb516de6"},
+]
