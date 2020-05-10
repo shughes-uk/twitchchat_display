@@ -1,6 +1,0 @@
-git+git://github.com/shughes-uk/python-twitchchat.git
-pillow
-pyyaml
-fonttools
-webcolors
-pygame

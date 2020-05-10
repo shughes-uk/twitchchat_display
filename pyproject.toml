@@ -18,3 +18,7 @@ twitchchat = {git = "https://github.com/shughes-uk/python-twitchchat.git"}
 
 [tool.poetry.scripts]
 twitch_display = 'twitchchat_display.main:main'
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
